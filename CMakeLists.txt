@@ -23,26 +23,31 @@ find_package(gary_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-add_library(${PROJECT_NAME} SHARED
-        src/gimbal_task.cpp
-        src/gimbal_behaviour.cpp
-        )
+add_executable(gimbal_control src/gimbal_control.cpp)
 
-target_include_directories(${PROJECT_NAME} PRIVATE include)
+target_include_directories(gimbal_control PRIVATE include)
 
 ament_target_dependencies(
-        ${PROJECT_NAME}
+        gimbal_control
         rclcpp
-        rclcpp_lifecycle
-        gary_msgs
         sensor_msgs
         std_msgs
         controller_manager_msgs
-)
+        gary_msgs)
+
+add_executable(gimbal_enter src/gimbal_enter.cpp)
+
+target_include_directories(gimbal_enter PRIVATE include)
+
+ament_target_dependencies(
+        gimbal_enter
+        rclcpp
+        gary_msgs)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -54,5 +59,10 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+install(TARGETS
+        gimbal_enter
+        gimbal_control
+        DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
