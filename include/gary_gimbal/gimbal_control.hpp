@@ -5,6 +5,16 @@
 #ifndef BUILD_GIMBAL_CONTROL_HPP
 #define BUILD_GIMBAL_CONTROL_HPP
 
+#define PI 3.141592653824f
+#define GIMBAL_CALI_GYRO_LIMIT 0.1f
+#define GIMBAL_CALI_STEP_TIME 2000
+#define GIMBAL_CALI_MOTOR_SET   1
+
+#define GIMBAL_CALI_PITCH_MAX_STEP  1
+#define GIMBAL_CALI_PITCH_MIN_STEP  2
+#define GIMBAL_CALI_YAW_MAX_STEP    3
+#define GIMBAL_CALI_YAW_MIN_STEP    4
+
 typedef enum
 {
     GIMBAL_MOTOR_RAW = 0, //电机原始值控制
@@ -29,6 +39,7 @@ namespace gimbal
     std_msgs::msg::Float64 YawEncoder;
     std_msgs::msg::Float64 PitchEncoder;
     std_msgs::msg::Int16 state;
+    short cali_step = GIMBAL_CALI_PITCH_MAX_STEP;
 
     class Mode
     {
@@ -41,11 +52,21 @@ namespace gimbal
 
     class Motor : public Mode{
     public:
+        float absolute_angle;
         float absolute_angle_set;
+        float absolute_angle_max;
+        float absolute_angle_min;
+        float relative_angle;
+        double motor_gyro;
+        float cali_max_angle;
+        float cali_min_angle;
+        float cali_max_ecd;
+        float cali_min_ecd;
         float current_set;
         float raw_cmd_current;
         float given_current;
         float add_angle;
+        float off_set;
     };
 
     Motor yaw;
