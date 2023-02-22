@@ -9,7 +9,7 @@
 #include "gary_msgs/msg/dual_loop_pi_dwith_filter.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "gimbal_control.hpp"
+#include "gary_gimbal/gimbal_control.hpp"
 
 using namespace std::chrono_literals;
 
