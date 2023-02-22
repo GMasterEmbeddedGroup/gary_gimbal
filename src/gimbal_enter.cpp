@@ -6,7 +6,7 @@
 #include "std_msgs/msg/int16.hpp"
 #include "gary_msgs/msg/dr16_receiver.hpp"
 #include "gary_msgs/msg/auto_aim.hpp"
-#include "../include/gary_gimbal/gimbal_enter.hpp"
+#include "gimbal_enter.hpp"
 
 using namespace std::chrono_literals;
 

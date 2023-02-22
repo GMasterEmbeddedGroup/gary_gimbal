@@ -23,6 +23,7 @@ find_package(gary_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
+find_package(control_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -38,7 +39,8 @@ ament_target_dependencies(
         sensor_msgs
         std_msgs
         controller_manager_msgs
-        gary_msgs)
+        gary_msgs
+        control_msgs)
 
 add_executable(gimbal_enter src/gimbal_enter.cpp)
 
