@@ -20,7 +20,7 @@ typedef enum
 namespace gimbal
 {
     sensor_msgs::msg::Imu Imu;//TODO 初始化
-    std_msgs::msg::Int16 state;
+    std_msgs::msg::Float64 state;
     gary_msgs::msg::DualLoopPIDwithFilter yaw_pid;
     gary_msgs::msg::DualLoopPIDwithFilter pitch_pid;
 

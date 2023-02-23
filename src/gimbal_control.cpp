@@ -1,9 +1,9 @@
 //
 // Created by maackia on 23-2-7.
 //
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/int16.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
 #include "gary_msgs/msg/dual_loop_pi_dwith_filter.hpp"
@@ -28,7 +28,7 @@ public:
         yaw_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_pid/set",rclcpp::SystemDefaultsQoS());
         pitch_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_pid/set",rclcpp::SystemDefaultsQoS());
         imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>("/gimbal_imu_broadcaster/imu",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::imu_callback,this,std::placeholders::_1));
-        state_sub_ = this->create_subscription<std_msgs::msg::Int16>("/gimbal_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::state_callback,this,std::placeholders::_1));//TODO 信息类型待定
+        state_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::state_callback,this,std::placeholders::_1));//TODO 信息类型待定
     }
 private:
 
@@ -88,7 +88,7 @@ private:
             }
         }
     }
-    void state_callback(const std_msgs::msg::Int16::SharedPtr msg){
+    void state_callback(const std_msgs::msg::Float64 ::SharedPtr msg){
         gimbal::state = *msg;
         if (gimbal::mode.behaviour == GIMBAL_ABSOLUTE_ANGLE){//TODO 限位
             std_msgs::msg::Float64 pid;
@@ -103,7 +103,7 @@ private:
             if (gimbal::pitch.absolute_angle_set <= gimbal::pitch.absolute_angle_max && gimbal::pitch.absolute_angle_set >= gimbal::pitch.absolute_angle_min){
                 gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_set + gimbal::pitch.ecd_transform;
                 gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
-                gimbal::pitch.pid_set = gimbal::pitch.ecd_delta - gimbal::pitch_pid.outer_feedback;//TODO check
+                gimbal::pitch.pid_set = gimbal::pitch.ecd_delta - gimbal::pitch_pid.outer_feedback;
 
                 pid.data = gimbal::pitch.pid_set;
                 pitch_publisher_->publish(pid);
@@ -114,7 +114,7 @@ private:
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_publisher_;
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDwithFilter>::SharedPtr yaw_pid_sub_;
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDwithFilter>::SharedPtr pitch_pid_sub_;
-    rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr state_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr state_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscription;
 };
