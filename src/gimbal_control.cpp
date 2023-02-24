@@ -117,10 +117,11 @@ private:
         if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
             gimbal::yaw.ecd_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform;
             gimbal::yaw.ecd_delta = gimbal::yaw.ecd_set - gimbal::yaw.relative_angle;
+            if (gimbal::yaw.ecd_delta >= PI) gimbal::yaw.ecd_delta-=2*PI;
 //            gimbal::yaw.pid_set = gimbal::yaw.ecd_delta - gimbal::yaw_pid.outer_feedback;//TODO check
             gimbal::yaw.pid_set = gimbal::yaw.ecd_delta + gimbal::yaw_pid.feedback;//TODO check
 
-            RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.feedback);
+            RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f delta %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.feedback, gimbal::yaw.ecd_delta);
 
             pid.data = gimbal::yaw.pid_set;
             yaw_publisher_->publish(pid);
@@ -129,6 +130,7 @@ private:
 
     void gimbal_pitch_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         gimbal::pitch.sub_angle = *msg;
+
         gimbal::pitch.absolute_angle_set = gimbal::pitch.sub_angle.data * PI;
         std_msgs::msg::Float64 pid;
         if (gimbal::pitch.absolute_angle_set <= gimbal::pitch.absolute_angle_max &&
