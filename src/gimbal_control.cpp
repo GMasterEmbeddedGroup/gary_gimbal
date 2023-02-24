@@ -6,7 +6,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
-#include "gary_msgs/msg/dual_loop_pi_dwith_filter.hpp"
+#include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "gary_gimbal/gimbal_control.hpp"
@@ -22,8 +22,8 @@ public:
         this->declare_parameter("gimbal_yaw_ecd_transform",1.66);
         this->declare_parameter("gimbal_pitch_ecd_transform",1.717291);
         init();
-        yaw_pid_sub_ = this->create_subscription<gary_msgs::msg::DualLoopPIDwithFilter>("/gimbal_yaw_pid/pid",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::yaw_pid_callback,this, std::placeholders::_1));
-        pitch_pid_sub_ = this->create_subscription<gary_msgs::msg::DualLoopPIDwithFilter>("/gimbal_pitch_pid/pid",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::pitch_pid_callback,this, std::placeholders::_1));
+        yaw_pid_sub_ = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>("/gimbal_yaw_pid/pid",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::yaw_pid_callback,this, std::placeholders::_1));
+        pitch_pid_sub_ = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>("/gimbal_pitch_pid/pid",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::pitch_pid_callback,this, std::placeholders::_1));
         joint_subscription = this->create_subscription<control_msgs::msg::DynamicJointState>("/dynamic_joint_states", rclcpp::SystemDefaultsQoS(), std::bind(&GimbalTask::joint_callback,this, std::placeholders::_1));
         yaw_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_pid/set",rclcpp::SystemDefaultsQoS());
         pitch_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_pid/set",rclcpp::SystemDefaultsQoS());
@@ -39,10 +39,10 @@ private:
         gimbal::pitch.ecd_transform = this->get_parameter("gimbal_pitch_ecd_transform").as_double();
     }
 
-    void yaw_pid_callback(const gary_msgs::msg::DualLoopPIDwithFilter::SharedPtr msg){
+    void yaw_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter ::SharedPtr msg){
         gimbal::yaw_pid = *msg;
     }
-    void pitch_pid_callback(const gary_msgs::msg::DualLoopPIDwithFilter::SharedPtr msg){
+    void pitch_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter ::SharedPtr msg){
         gimbal::pitch_pid = *msg;
     }
     //四元数转换 ROLL,YAW反了
@@ -112,8 +112,8 @@ private:
     }
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_publisher_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_publisher_;
-    rclcpp::Subscription<gary_msgs::msg::DualLoopPIDwithFilter>::SharedPtr yaw_pid_sub_;
-    rclcpp::Subscription<gary_msgs::msg::DualLoopPIDwithFilter>::SharedPtr pitch_pid_sub_;
+    rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr yaw_pid_sub_;
+    rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr state_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscription;
