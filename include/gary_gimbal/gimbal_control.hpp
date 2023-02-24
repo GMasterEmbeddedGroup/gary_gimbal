@@ -20,7 +20,6 @@ typedef enum
 namespace gimbal
 {
     sensor_msgs::msg::Imu Imu;//TODO 初始化
-    std_msgs::msg::Float64 state;
     gary_msgs::msg::DualLoopPIDWithFilter yaw_pid;
     gary_msgs::msg::DualLoopPIDWithFilter pitch_pid;
 
@@ -34,6 +33,7 @@ namespace gimbal
     class Motor : public Mode{
     public:
         double absolute_angle;
+        std_msgs::msg::Float64 sub_angle;
         double absolute_angle_set;
         double absolute_angle_max;
         double absolute_angle_min;

@@ -28,7 +28,8 @@ public:
         yaw_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_pid/set",rclcpp::SystemDefaultsQoS());
         pitch_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_pid/set",rclcpp::SystemDefaultsQoS());
         imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>("/gimbal_imu_broadcaster/imu",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::imu_callback,this,std::placeholders::_1));
-        state_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::state_callback,this,std::placeholders::_1));//TODO 信息类型待定
+        gimbal_yaw_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_yaw_callback,this,std::placeholders::_1));
+        gimbal_pitch_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_pitch_callback,this,std::placeholders::_1));
     }
 private:
 
@@ -39,10 +40,10 @@ private:
         gimbal::pitch.ecd_transform = this->get_parameter("gimbal_pitch_ecd_transform").as_double();
     }
 
-    void yaw_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter ::SharedPtr msg){
+    void yaw_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg){
         gimbal::yaw_pid = *msg;
     }
-    void pitch_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter ::SharedPtr msg){
+    void pitch_pid_callback(const gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg){
         gimbal::pitch_pid = *msg;
     }
     //四元数转换 ROLL,YAW反了
@@ -88,33 +89,41 @@ private:
             }
         }
     }
-    void state_callback(const std_msgs::msg::Float64 ::SharedPtr msg){
-        gimbal::state = *msg;
-        if (gimbal::mode.behaviour == GIMBAL_ABSOLUTE_ANGLE){//TODO 限位
-            std_msgs::msg::Float64 pid;
-            if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI){
-                gimbal::yaw.ecd_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform;
-                gimbal::yaw.ecd_delta = gimbal::yaw.ecd_set - gimbal::yaw.relative_angle;
-                gimbal::yaw.pid_set = gimbal::yaw.ecd_delta - gimbal::yaw_pid.outer_feedback;//TODO check
 
-                pid.data = gimbal::yaw.pid_set;
-                yaw_publisher_->publish(pid);
-            }
-            if (gimbal::pitch.absolute_angle_set <= gimbal::pitch.absolute_angle_max && gimbal::pitch.absolute_angle_set >= gimbal::pitch.absolute_angle_min){
-                gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_set + gimbal::pitch.ecd_transform;
-                gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
-                gimbal::pitch.pid_set = gimbal::pitch.ecd_delta - gimbal::pitch_pid.outer_feedback;
+    void gimbal_yaw_callback(const std_msgs::msg::Float64::SharedPtr msg) {
+        gimbal::yaw.sub_angle = *msg;
+        gimbal::yaw.absolute_angle_set = gimbal::yaw.sub_angle.data;
+        std_msgs::msg::Float64 pid;
+        if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
+            gimbal::yaw.ecd_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform;
+            gimbal::yaw.ecd_delta = gimbal::yaw.ecd_set - gimbal::yaw.relative_angle;
+            gimbal::yaw.pid_set = gimbal::yaw.ecd_delta - gimbal::yaw_pid.outer_feedback;//TODO check
 
-                pid.data = gimbal::pitch.pid_set;
-                pitch_publisher_->publish(pid);
-            }
+            pid.data = gimbal::yaw.pid_set;
+            yaw_publisher_->publish(pid);
+        }
+    }
+
+    void gimbal_pitch_callback(const std_msgs::msg::Float64::SharedPtr msg) {
+        gimbal::pitch.sub_angle = *msg;
+        gimbal::pitch.absolute_angle_set = gimbal::pitch.sub_angle.data;
+        std_msgs::msg::Float64 pid;
+        if (gimbal::pitch.absolute_angle_set <= gimbal::pitch.absolute_angle_max &&
+            gimbal::pitch.absolute_angle_set >= gimbal::pitch.absolute_angle_min) {
+            gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_set + gimbal::pitch.ecd_transform;
+            gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
+            gimbal::pitch.pid_set = gimbal::pitch.ecd_delta - gimbal::pitch_pid.outer_feedback;
+
+            pid.data = gimbal::pitch.pid_set;
+            pitch_publisher_->publish(pid);
         }
     }
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_publisher_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_publisher_;
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr yaw_pid_sub_;
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub_;
-    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr state_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_yaw_sub_;
+    rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_pitch_sub_;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscription;
 };
