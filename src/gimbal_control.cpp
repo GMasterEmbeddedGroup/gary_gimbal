@@ -116,6 +116,7 @@ private:
             gimbal::yaw.pid_set = gimbal::yaw.ecd_delta + gimbal::yaw_pid.feedback;//TODO check
 
             RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f delta %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.feedback, gimbal::yaw.ecd_delta);
+
             pid.data = gimbal::yaw.pid_set;
             yaw_publisher_->publish(pid);
         }
