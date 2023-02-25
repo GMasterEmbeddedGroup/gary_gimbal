@@ -4,6 +4,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int16.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
 #include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
@@ -30,6 +31,7 @@ public:
         imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>("/gimbal_imu_broadcaster/imu",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::imu_callback,this,std::placeholders::_1));
         gimbal_yaw_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_yaw_callback,this,std::placeholders::_1));
         gimbal_pitch_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_pitch_callback,this,std::placeholders::_1));
+        gimbal_status = this->create_subscription<std_msgs::msg::Int16>("gimbal_status",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_status_callback,this,std::placeholders::_1));
     }
 private:
 
@@ -48,15 +50,21 @@ private:
         gimbal::pitch_pid = *msg;
     }
 
+    void gimbal_status_callback(const std_msgs::msg::Int16::SharedPtr msg){
+        gimbal::status = *msg;
+    }
+
     //四元数转换 ROLL,YAW反了
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg){
         gimbal::Imu = *msg;
         double yaw,pitch,roll;
+        double off_set = 0;
         tf2::Quaternion imu_quaternion(gimbal::Imu.orientation.x,gimbal::Imu.orientation.y,gimbal::Imu.orientation.z,gimbal::Imu.orientation.w);
         tf2::Matrix3x3 m(imu_quaternion);
         m.getRPY(roll,pitch,yaw);
+        if (gimbal::status.data == 1) off_set = roll;
         //RCLCPP_INFO(this->get_logger(),"yaw:%lf pitch:%lf roll:%lf",yaw,pitch,roll);
-        gimbal::yaw.absolute_angle = roll;
+        gimbal::yaw.absolute_angle = roll - off_set;
         gimbal::pitch.absolute_angle = pitch;
     }
     void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr joint_state) {
@@ -104,7 +112,7 @@ private:
             gimbal::yaw.ecd_delta = gimbal::yaw.ecd_set - gimbal::yaw.relative_angle;
             gimbal::yaw.pid_set = gimbal::yaw.ecd_delta + gimbal::yaw_pid.outer_feedback;
 
-            RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.feedback);
+            RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.outer_feedback);
 
             pid.data = gimbal::yaw.pid_set;
             yaw_publisher_->publish(pid);
@@ -131,6 +139,7 @@ private:
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_yaw_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_pitch_sub_;
+    rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr gimbal_status;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscription;
 };

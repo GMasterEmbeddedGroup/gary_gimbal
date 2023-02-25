@@ -22,6 +22,7 @@ namespace gimbal
     sensor_msgs::msg::Imu Imu;//TODO 初始化
     gary_msgs::msg::DualLoopPIDWithFilter yaw_pid;
     gary_msgs::msg::DualLoopPIDWithFilter pitch_pid;
+    std_msgs::msg::Int16 status;
 
     class Mode
     {
