@@ -24,7 +24,7 @@ public:
 private:
     void rc_callback(const gary_msgs::msg::DR16Receiver::SharedPtr msg){
         enter::RC_control = *msg;
-
+        RCLCPP_INFO(this->get_logger(),"status:%d",enter::status.data);
         if (enter::RC_control.sw_right == enter::RC_control.SW_MID){
             std_msgs::msg::Float64 yaw_enter;
             std_msgs::msg::Float64 pitch_enter;
@@ -38,18 +38,18 @@ private:
             static short i=0;
             if (enter::RC_control.ch_left_x == 1 && enter::RC_control.ch_left_y == -1 && enter::RC_control.ch_right_x == -1 && enter::RC_control.ch_right_y == -1){
                 i++;
+                RCLCPP_INFO(this->get_logger(),"i:%d",i);
             }
-            if (i >= 2000){
-                std_msgs::msg::Int16 gimbal_status;
-                gimbal_status.data = 1;
-                gimbal_status_publisher_->publish(gimbal_status);
-            } else if (i >= 4000 || i == 0){
-                std_msgs::msg::Int16 gimbal_status;
-                gimbal_status.data = 0;
-                gimbal_status_publisher_->publish(gimbal_status);
+            if (i >= 200 && i < 400){
+                enter::status.data = 1;
+                gimbal_status_publisher_->publish(enter::status);
+            } else if (i >= 400 || i == 0){
+                enter::status.data = 0;
+                gimbal_status_publisher_->publish(enter::status);
                 i = 0;
             }
         }
+        enter::last_RC_control.sw_right = enter::RC_control.sw_right;
     }
     void auto_aim_callback(const gary_msgs::msg::AutoAIM::SharedPtr msg){
         enter::autoAim = *msg;

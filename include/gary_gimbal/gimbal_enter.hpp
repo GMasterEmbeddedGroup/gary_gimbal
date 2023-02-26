@@ -18,9 +18,11 @@ typedef enum
 namespace enter
 {
     gary_msgs::msg::DR16Receiver RC_control;
+    gary_msgs::msg::DR16Receiver last_RC_control;
     gary_msgs::msg::AutoAIM autoAim;
     gimbal_behaviour_e behaviour;
     gimbal_behaviour_e last_behaviour;
+    std_msgs::msg::Int16 status;
 }
 
 

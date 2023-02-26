@@ -18,8 +18,8 @@ class GimbalTask : public rclcpp::Node
 {
 public:
     GimbalTask():Node("gimbal_control"){
-        this->declare_parameter("gimbal_pitch_max_ecd",0.739379);//TODO 写入至配置文件
-        this->declare_parameter("gimbal_pitch_min_ecd",-0.461077);
+        this->declare_parameter("gimbal_pitch_max_ecd",2.462039);//TODO 写入至配置文件
+        this->declare_parameter("gimbal_pitch_min_ecd",1.247126);
         this->declare_parameter("gimbal_yaw_ecd_transform",1.66);
         this->declare_parameter("gimbal_pitch_ecd_transform",1.717291);
         init();
@@ -36,8 +36,8 @@ public:
 private:
 
     void init(){
-        gimbal::pitch.absolute_angle_max = this->get_parameter("gimbal_pitch_max_ecd").as_double();
-        gimbal::pitch.absolute_angle_min = this->get_parameter("gimbal_pitch_min_ecd").as_double();
+        gimbal::pitch.absolute_angle_max = this->get_parameter("gimbal_pitch_max_ecd").as_double() - 0.01;
+        gimbal::pitch.absolute_angle_min = this->get_parameter("gimbal_pitch_min_ecd").as_double() + 0.01;
         gimbal::yaw.ecd_transform = this->get_parameter("gimbal_yaw_ecd_transform").as_double();
         gimbal::pitch.ecd_transform = this->get_parameter("gimbal_pitch_ecd_transform").as_double();
     }
@@ -52,19 +52,21 @@ private:
 
     void gimbal_status_callback(const std_msgs::msg::Int16::SharedPtr msg){
         gimbal::status = *msg;
+        //RCLCPP_INFO(this->get_logger(),"status %d",gimbal::status.data);
     }
 
     //四元数转换 ROLL,YAW反了
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg){
         gimbal::Imu = *msg;
         double yaw,pitch,roll;
-        double off_set = 0;
         tf2::Quaternion imu_quaternion(gimbal::Imu.orientation.x,gimbal::Imu.orientation.y,gimbal::Imu.orientation.z,gimbal::Imu.orientation.w);
         tf2::Matrix3x3 m(imu_quaternion);
         m.getRPY(roll,pitch,yaw);
-        if (gimbal::status.data == 1) off_set = roll;
-        //RCLCPP_INFO(this->get_logger(),"yaw:%lf pitch:%lf roll:%lf",yaw,pitch,roll);
-        gimbal::yaw.absolute_angle = roll - off_set;
+        if (gimbal::status.data == 1) gimbal::off_set = roll;
+        RCLCPP_INFO(this->get_logger(),"pitch:%lf roll:%lf off_set:%f absolute_angle %f",pitch,roll,gimbal::off_set,gimbal::yaw.absolute_angle);
+        gimbal::yaw.absolute_angle = roll - gimbal::off_set;
+        if (gimbal::yaw.absolute_angle < 0) gimbal::yaw.absolute_angle+=6.28;
+        if(gimbal::yaw.absolute_angle > PI) gimbal::yaw.absolute_angle-=2*PI;
         gimbal::pitch.absolute_angle = pitch;
     }
     void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr joint_state) {
@@ -110,12 +112,10 @@ private:
         if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
             gimbal::yaw.ecd_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform;
             gimbal::yaw.ecd_delta = gimbal::yaw.ecd_set - gimbal::yaw.relative_angle;
-
             if (gimbal::yaw.ecd_delta >= PI) gimbal::yaw.ecd_delta-=2*PI;
-//            gimbal::yaw.pid_set = gimbal::yaw.ecd_delta - gimbal::yaw_pid.outer_feedback;//TODO check
             gimbal::yaw.pid_set = gimbal::yaw.ecd_delta + gimbal::yaw_pid.outer_feedback;//TODO check
 
-            RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f delta %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.outer_feedback, gimbal::yaw.ecd_delta);
+            //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f ecd_transform %f relative_angle %f feedback %f delta %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.ecd_transform,gimbal::yaw.relative_angle,gimbal::yaw_pid.outer_feedback, gimbal::yaw.ecd_delta);
 
             pid.data = gimbal::yaw.pid_set;
             yaw_publisher_->publish(pid);
@@ -127,15 +127,32 @@ private:
 
         gimbal::pitch.absolute_angle_set = gimbal::pitch.sub_angle.data * PI;
         std_msgs::msg::Float64 pid;
-        if (gimbal::pitch.absolute_angle_set <= gimbal::pitch.absolute_angle_max &&
-            gimbal::pitch.absolute_angle_set >= gimbal::pitch.absolute_angle_min) {
-            gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_set + gimbal::pitch.ecd_transform;
-            gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
-            gimbal::pitch.pid_set = gimbal::pitch.ecd_delta + gimbal::pitch_pid.outer_feedback;
 
-            pid.data = gimbal::pitch.pid_set;
-            pitch_publisher_->publish(pid);
+        //RCLCPP_INFO(this->get_logger(),"absolute_max_angle %f absolute_min_angle %f set %f feedback %f",gimbal::pitch.absolute_angle_max,gimbal::pitch.absolute_angle_min,gimbal::pitch.absolute_angle_set,gimbal::pitch.ecd_set);
+
+        gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_set + gimbal::pitch.ecd_transform;
+
+        if (gimbal::pitch.ecd_set <= gimbal::pitch.absolute_angle_max && gimbal::pitch.ecd_set >= gimbal::pitch.absolute_angle_min) {
+            gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
+            if (gimbal::pitch.ecd_delta >= PI) gimbal::pitch.ecd_delta-=2*PI;
+            gimbal::pitch.pid_set = gimbal::pitch.ecd_delta + gimbal::pitch_pid.outer_feedback;
         }
+
+        if (gimbal::pitch.ecd_set > gimbal::pitch.absolute_angle_max){
+            gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_max;
+            gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
+            if (gimbal::pitch.ecd_delta >= PI) gimbal::pitch.ecd_delta-=2*PI;
+            gimbal::pitch.pid_set = gimbal::pitch.ecd_delta + gimbal::pitch_pid.outer_feedback;
+        }
+        if (gimbal::pitch.ecd_set < gimbal::pitch.absolute_angle_min){
+            gimbal::pitch.ecd_set = gimbal::pitch.absolute_angle_min;
+            gimbal::pitch.ecd_delta = gimbal::pitch.ecd_set - gimbal::pitch.relative_angle;
+            if (gimbal::pitch.ecd_delta >= PI) gimbal::pitch.ecd_delta-=2*PI;
+            gimbal::pitch.pid_set = gimbal::pitch.ecd_delta + gimbal::pitch_pid.outer_feedback;
+        }
+
+        pid.data = gimbal::pitch.pid_set;
+        pitch_publisher_->publish(pid);
     }
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_publisher_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_publisher_;
