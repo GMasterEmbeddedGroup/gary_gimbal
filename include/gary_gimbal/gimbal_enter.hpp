@@ -5,6 +5,8 @@
 #ifndef BUILD_GIMBAL_ENTER_HPP
 #define BUILD_GIMBAL_ENTER_HPP
 
+#define PI 3.141592f
+
 typedef enum
 {
     GIMBAL_ZERO_FORCE = 0,

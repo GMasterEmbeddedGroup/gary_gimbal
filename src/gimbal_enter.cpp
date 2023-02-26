@@ -15,7 +15,7 @@ class GimbalEnterTask : public rclcpp::Node
 public:
     GimbalEnterTask():Node("gimbal_enter"){
         rc_sub_ = this->create_subscription<gary_msgs::msg::DR16Receiver>("/remote_control",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::rc_callback,this,std::placeholders::_1));
-        auto_aim_sub_ = this->create_subscription<gary_msgs::msg::AutoAIM>("/auto_aim",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::auto_aim_callback,this,std::placeholders::_1));//TODO topic待定
+        auto_aim_sub_ = this->create_subscription<gary_msgs::msg::AutoAIM>("/autoaim/target",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::auto_aim_callback,this,std::placeholders::_1));//TODO topic待定
         yaw_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS());
         pitch_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS());
     }
@@ -25,9 +25,9 @@ private:
         if (enter::RC_control.sw_right == enter::RC_control.SW_MID){
             std_msgs::msg::Float64 yaw_enter;
             std_msgs::msg::Float64 pitch_enter;
-            yaw_enter.data = enter::RC_control.ch_right_x;
+            yaw_enter.data = enter::RC_control.ch_right_x * PI;
             yaw_enter_publisher_->publish(yaw_enter);
-            pitch_enter.data = enter::RC_control.ch_right_y;
+            pitch_enter.data = enter::RC_control.ch_right_y * PI;
             pitch_enter_publisher_->publish(pitch_enter);
         }
     }
