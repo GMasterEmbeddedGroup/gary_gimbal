@@ -22,7 +22,6 @@ namespace enter
     gary_msgs::msg::AutoAIM autoAim;
     gimbal_behaviour_e behaviour;
     gimbal_behaviour_e last_behaviour;
-    std_msgs::msg::Int16 status;
 }
 
 

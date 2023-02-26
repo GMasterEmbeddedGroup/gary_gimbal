@@ -4,7 +4,6 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/int16.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
 #include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
@@ -31,7 +30,6 @@ public:
         imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>("/gimbal_imu_broadcaster/imu",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::imu_callback,this,std::placeholders::_1));
         gimbal_yaw_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_yaw_callback,this,std::placeholders::_1));
         gimbal_pitch_sub_ = this->create_subscription<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_pitch_callback,this,std::placeholders::_1));
-        gimbal_status = this->create_subscription<std_msgs::msg::Int16>("gimbal_status",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::gimbal_status_callback,this,std::placeholders::_1));
     }
 private:
 
@@ -50,11 +48,6 @@ private:
         gimbal::pitch_pid = *msg;
     }
 
-    void gimbal_status_callback(const std_msgs::msg::Int16::SharedPtr msg){
-        gimbal::status = *msg;
-        //RCLCPP_INFO(this->get_logger(),"status %d",gimbal::status.data);
-    }
-
     //四元数转换 ROLL,YAW反了
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg){
         gimbal::Imu = *msg;
@@ -62,11 +55,8 @@ private:
         tf2::Quaternion imu_quaternion(gimbal::Imu.orientation.x,gimbal::Imu.orientation.y,gimbal::Imu.orientation.z,gimbal::Imu.orientation.w);
         tf2::Matrix3x3 m(imu_quaternion);
         m.getRPY(roll,pitch,yaw);
-        if (gimbal::status.data == 1) gimbal::off_set = roll;
-        RCLCPP_INFO(this->get_logger(),"pitch:%lf roll:%lf off_set:%f absolute_angle %f",pitch,roll,gimbal::off_set,gimbal::yaw.absolute_angle);
-        gimbal::yaw.absolute_angle = roll - gimbal::off_set;
-        if (gimbal::yaw.absolute_angle < 0) gimbal::yaw.absolute_angle+=6.28;
-        if(gimbal::yaw.absolute_angle > PI) gimbal::yaw.absolute_angle-=2*PI;
+        //RCLCPP_INFO(this->get_logger(),"pitch:%lf roll:%lf off_set:%f absolute_angle %f",pitch,roll,gimbal::off_set,gimbal::yaw.absolute_angle);
+        gimbal::yaw.absolute_angle = roll;
         gimbal::pitch.absolute_angle = pitch;
     }
     void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr joint_state) {
@@ -106,7 +96,7 @@ private:
 
     void gimbal_yaw_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         gimbal::yaw.sub_angle = *msg;
-        gimbal::yaw.absolute_angle_set = gimbal::yaw.sub_angle.data * PI;
+        gimbal::yaw.absolute_angle_set = - gimbal::yaw.sub_angle.data * PI;
         //RCLCPP_INFO(this->get_logger(),"angle %f",gimbal::yaw.absolute_angle_set);
         std_msgs::msg::Float64 pid;
         if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
@@ -125,7 +115,7 @@ private:
     void gimbal_pitch_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         gimbal::pitch.sub_angle = *msg;
 
-        gimbal::pitch.absolute_angle_set = gimbal::pitch.sub_angle.data * PI;
+        gimbal::pitch.absolute_angle_set = - gimbal::pitch.sub_angle.data * PI;
         std_msgs::msg::Float64 pid;
 
         //RCLCPP_INFO(this->get_logger(),"absolute_max_angle %f absolute_min_angle %f set %f feedback %f",gimbal::pitch.absolute_angle_max,gimbal::pitch.absolute_angle_min,gimbal::pitch.absolute_angle_set,gimbal::pitch.ecd_set);
@@ -160,7 +150,6 @@ private:
     rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_yaw_sub_;
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr gimbal_pitch_sub_;
-    rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr gimbal_status;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
     rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscription;
 };

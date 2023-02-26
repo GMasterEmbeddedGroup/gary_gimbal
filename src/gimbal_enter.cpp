@@ -3,7 +3,6 @@
 //
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/int16.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "gary_msgs/msg/dr16_receiver.hpp"
 #include "gary_msgs/msg/auto_aim.hpp"
@@ -19,12 +18,10 @@ public:
         auto_aim_sub_ = this->create_subscription<gary_msgs::msg::AutoAIM>("/auto_aim",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::auto_aim_callback,this,std::placeholders::_1));//TODO topic待定
         yaw_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS());
         pitch_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS());
-        gimbal_status_publisher_ = this->create_publisher<std_msgs::msg::Int16>("gimbal_status",rclcpp::SystemDefaultsQoS());
     }
 private:
     void rc_callback(const gary_msgs::msg::DR16Receiver::SharedPtr msg){
         enter::RC_control = *msg;
-        RCLCPP_INFO(this->get_logger(),"status:%d",enter::status.data);
         if (enter::RC_control.sw_right == enter::RC_control.SW_MID){
             std_msgs::msg::Float64 yaw_enter;
             std_msgs::msg::Float64 pitch_enter;
@@ -33,23 +30,6 @@ private:
             pitch_enter.data = enter::RC_control.ch_right_y;
             pitch_enter_publisher_->publish(pitch_enter);
         }
-
-        if (enter::RC_control.sw_right == enter::RC_control.SW_DOWN && enter::RC_control.sw_left == enter::RC_control.SW_DOWN){
-            static short i=0;
-            if (enter::RC_control.ch_left_x == 1 && enter::RC_control.ch_left_y == -1 && enter::RC_control.ch_right_x == -1 && enter::RC_control.ch_right_y == -1){
-                i++;
-                RCLCPP_INFO(this->get_logger(),"i:%d",i);
-            }
-            if (i >= 200 && i < 400){
-                enter::status.data = 1;
-                gimbal_status_publisher_->publish(enter::status);
-            } else if (i >= 400 || i == 0){
-                enter::status.data = 0;
-                gimbal_status_publisher_->publish(enter::status);
-                i = 0;
-            }
-        }
-        enter::last_RC_control.sw_right = enter::RC_control.sw_right;
     }
     void auto_aim_callback(const gary_msgs::msg::AutoAIM::SharedPtr msg){
         enter::autoAim = *msg;
@@ -66,7 +46,6 @@ private:
     rclcpp::Subscription<gary_msgs::msg::AutoAIM>::SharedPtr auto_aim_sub_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_enter_publisher_;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_enter_publisher_;
-    rclcpp::Publisher<std_msgs::msg::Int16>::SharedPtr gimbal_status_publisher_;
 };
 
 int main(int argc, char * argv[]){
