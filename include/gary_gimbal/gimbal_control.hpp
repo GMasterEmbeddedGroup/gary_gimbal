@@ -22,6 +22,7 @@ namespace gimbal
     sensor_msgs::msg::Imu Imu;//TODO 初始化
     gary_msgs::msg::DualLoopPIDWithFilter yaw_pid;
     gary_msgs::msg::DualLoopPIDWithFilter pitch_pid;
+    std_msgs::msg::Int16 state;
 
     class Mode
     {
@@ -33,6 +34,7 @@ namespace gimbal
     class Motor : public Mode{
     public:
         double absolute_angle;
+        double absolute_angle_pre;
         std_msgs::msg::Float64 sub_angle;
         double absolute_angle_set;
         double absolute_angle_max;
