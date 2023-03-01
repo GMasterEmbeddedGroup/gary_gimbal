@@ -10,6 +10,18 @@
 
 using namespace std::chrono_literals;
 
+float yaw_enter_data_temp = 0 , pitch_enter_data_temp = 0 , k_rc = 0.08 , k_mk = 0.08; //k_为倍数参数,k_rc最大实践值0.84
+
+double judge_transgress(double gimble_enter){ //越界判断
+    while (gimble_enter > PI){
+        gimble_enter = gimble_enter - 2*PI;
+    }
+    while (gimble_enter < -PI){
+        gimble_enter = gimble_enter + 2*PI;
+    }
+    return gimble_enter; //算法缺陷：若拨出10pi，运算后最终也是0pi
+}
+
 class GimbalEnterTask : public rclcpp::Node
 {
 public:
@@ -25,9 +37,17 @@ private:
         if (enter::RC_control.sw_right == enter::RC_control.SW_MID){
             std_msgs::msg::Float64 yaw_enter;
             std_msgs::msg::Float64 pitch_enter;
-            yaw_enter.data = enter::RC_control.ch_right_x * PI;
+            if (enter::RC_control.mouse_x == 0 && enter::RC_control.mouse_y == 0){ //判断鼠标无动作,使用遥控器
+                yaw_enter_data_temp += enter::RC_control.ch_right_x*k_rc; //最大值1684中间值1024最小值364
+                pitch_enter_data_temp += enter::RC_control.ch_right_y*k_rc;
+            }
+            else {
+                yaw_enter_data_temp += enter::RC_control.mouse_x*k_mk; //+-32767静止值0
+                pitch_enter_data_temp += enter::RC_control.mouse_y*k_mk;
+            }
+            yaw_enter.data = judge_transgress(yaw_enter_data_temp);
+            pitch_enter.data = judge_transgress(pitch_enter_data_temp);
             yaw_enter_publisher_->publish(yaw_enter);
-            pitch_enter.data = enter::RC_control.ch_right_y * PI;
             pitch_enter_publisher_->publish(pitch_enter);
         }
     }
