@@ -35,6 +35,7 @@ namespace gimbal
     public:
         double absolute_angle;
         double absolute_angle_pre;
+        double relative_angle_pre;
         std_msgs::msg::Float64 sub_angle;
         double absolute_angle_set;
         double absolute_angle_max;
