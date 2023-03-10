@@ -118,20 +118,11 @@ private:
         gimbal::yaw.absolute_angle_set = gimbal::yaw.sub_angle.data;
         //RCLCPP_INFO(this->get_logger(),"angle %f",gimbal::yaw.sub_angle.data);
         std_msgs::msg::Float64 pid;
-        if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
-            //gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform + gimbal::yaw.absolute_angle_pre + gimbal::yaw.relative_angle_pre;
-            gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set;
-            if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
-            if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
+        gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set;
+        //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f absolute_angle_pre %f relative_angle_pre %f pid_set %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.absolute_angle_pre,gimbal::yaw.relative_angle_pre,gimbal::yaw.pid_set);
 
-            //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f absolute_angle_pre %f relative_angle_pre %f pid_set %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.absolute_angle_pre,gimbal::yaw.relative_angle_pre,gimbal::yaw.pid_set);
-
-            pid.data = gimbal::yaw.pid_set;
-            yaw_publisher_->publish(pid);
-        }
-
-
-
+        pid.data = gimbal::yaw.pid_set;
+        yaw_publisher_->publish(pid);
     }
 
     void gimbal_pitch_callback(const std_msgs::msg::Float64::SharedPtr msg) {

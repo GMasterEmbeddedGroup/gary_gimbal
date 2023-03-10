@@ -51,7 +51,7 @@ private:
                 this->yaw_set += enter::RC_control.mouse_x*k_mk; //+-32767静止值0
                 this->pitch_set += enter::RC_control.mouse_y*k_mk;
             }
-            yaw_enter.data = judge_transgress(this->yaw_set);
+            yaw_enter.data = this->yaw_set;
             pitch_enter.data = this->pitch_set;
             yaw_enter_publisher_->publish(yaw_enter);
             pitch_enter_publisher_->publish(pitch_enter);
