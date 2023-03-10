@@ -18,7 +18,7 @@ class GimbalTask : public rclcpp::Node
 {
 public:
     GimbalTask():Node("gimbal_control"){
-        this->declare_parameter("gimbal_pitch_max",0.74277);//TODO 写入至配置文件
+        this->declare_parameter("gimbal_pitch_max",0.72477);//TODO 写入至配置文件
         this->declare_parameter("gimbal_pitch_min",-0.45125);
         this->declare_parameter("gimbal_yaw_ecd_transform",1.66);
         this->declare_parameter("gimbal_pitch_ecd_transform",1.717291);
@@ -118,24 +118,26 @@ private:
         gimbal::yaw.absolute_angle_set = gimbal::yaw.sub_angle.data;
         //RCLCPP_INFO(this->get_logger(),"angle %f",gimbal::yaw.sub_angle.data);
         std_msgs::msg::Float64 pid;
-            if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
-                //gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform + gimbal::yaw.absolute_angle_pre + gimbal::yaw.relative_angle_pre;
-                gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set;
-                if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
-                if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
+        if (gimbal::yaw.absolute_angle_set <= PI && gimbal::yaw.absolute_angle_set >= -PI) {
+            //gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.ecd_transform + gimbal::yaw.absolute_angle_pre + gimbal::yaw.relative_angle_pre;
+            gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set;
+            if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
+            if (gimbal::yaw.pid_set >= PI) gimbal::yaw.pid_set-=2*PI;
 
-                //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f absolute_angle_pre %f relative_angle_pre %f pid_set %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.absolute_angle_pre,gimbal::yaw.relative_angle_pre,gimbal::yaw.pid_set);
+            //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f absolute_angle_pre %f relative_angle_pre %f pid_set %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.absolute_angle_pre,gimbal::yaw.relative_angle_pre,gimbal::yaw.pid_set);
 
-                pid.data = gimbal::yaw.pid_set;
-                yaw_publisher_->publish(pid);
-            }
+            pid.data = gimbal::yaw.pid_set;
+            yaw_publisher_->publish(pid);
+        }
+
+
 
     }
 
     void gimbal_pitch_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         gimbal::pitch.sub_angle = *msg;
 
-        gimbal::pitch.absolute_angle_set = - gimbal::pitch.sub_angle.data;
+        gimbal::pitch.absolute_angle_set = gimbal::pitch.sub_angle.data;
         std_msgs::msg::Float64 pid;
 
         if (gimbal::pitch.absolute_angle_set >= gimbal::pitch.absolute_angle_max){
@@ -146,7 +148,7 @@ private:
             gimbal::pitch.absolute_angle_set = gimbal::pitch.absolute_angle_min;
         }
 
-        RCLCPP_INFO(this->get_logger(),"set %f",gimbal::pitch.absolute_angle_set);
+        //RCLCPP_INFO(this->get_logger(),"set %f",gimbal::pitch.absolute_angle_set);
         pid.data = gimbal::pitch.absolute_angle_set;
         pitch_publisher_->publish(pid);
     }
