@@ -53,6 +53,7 @@ private:
             }
             yaw_enter.data = this->yaw_set;
             pitch_enter.data = this->pitch_set;
+            RCLCPP_INFO(this->get_logger(),"yaw %f",this->yaw_set);
             yaw_enter_publisher_->publish(yaw_enter);
             pitch_enter_publisher_->publish(pitch_enter);
         }

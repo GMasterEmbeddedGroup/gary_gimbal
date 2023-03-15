@@ -20,7 +20,7 @@ public:
     GimbalTask():Node("gimbal_control"){
         this->declare_parameter("gimbal_pitch_max",0.72477);//TODO 写入至配置文件
         this->declare_parameter("gimbal_pitch_min",-0.45125);
-        this->declare_parameter("gimbal_yaw_ecd_transform",1.66);
+        this->declare_parameter("gimbal_yaw_ecd_transform",1.222581);
         this->declare_parameter("gimbal_pitch_ecd_transform",1.717291);
         init();
         yaw_pid_sub_ = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>("/gimbal_yaw_pid/pid",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalTask::yaw_pid_callback,this, std::placeholders::_1));
@@ -51,21 +51,21 @@ private:
         gimbal::pitch_pid = *msg;
     }
 
-    //四元数转换 ROLL,YAW反了
+    //四元数转换 ROLL,YAW反了 且方向反了
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg){
         gimbal::Imu = *msg;
         double yaw,pitch,roll;
-        static int flag = 0;
+        static int flag_imu = 0;
         tf2::Quaternion imu_quaternion(gimbal::Imu.orientation.x,gimbal::Imu.orientation.y,gimbal::Imu.orientation.z,gimbal::Imu.orientation.w);
         tf2::Matrix3x3 m(imu_quaternion);
         m.getRPY(roll,pitch,yaw);
         //RCLCPP_INFO(this->get_logger(),"pitch:%lf roll:%lf",pitch,roll);
-        if (flag == 0){
-            gimbal::yaw.absolute_angle_pre = roll;
+        if (flag_imu == 0){
+            gimbal::yaw.absolute_angle_pre = -roll;
             gimbal::pitch.absolute_angle_pre = pitch;
-            flag = 1;
+            flag_imu = 1;
         }
-        gimbal::yaw.absolute_angle = roll;
+        gimbal::yaw.absolute_angle = -roll;
         gimbal::pitch.absolute_angle = pitch;
     }
     void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr joint_state) {
@@ -75,16 +75,16 @@ private:
                     if (joint_state->interface_values[i].interface_names[j] == "encoder") {
                         double origin = joint_state->interface_values[i].values[j];
                         double fixed = origin;
-                        fixed = origin - 1.66;
-                        static int flag = 0;
-                        if (flag == 0){
-                            gimbal::yaw.relative_angle_pre = origin;
-                            flag = 1;
-                        }
+                        fixed = origin + 1.222581;
                         if (fixed < 0) fixed+=6.28;
                         if(fixed > PI) fixed-=2*PI;//转换为-PI到PI
                         if(origin > PI) origin -=2*PI;
                         gimbal::yaw.relative_angle = origin;
+                        static int flag_ecd = 0;
+                        if (flag_ecd == 0){
+                            gimbal::yaw.relative_angle_pre = origin;
+                            flag_ecd = 1;
+                        }
                         //RCLCPP_INFO(this->get_logger(), "origin %f fixed %f", gimbal::yaw.relative_angle, fixed);
                     }
                 }
@@ -97,15 +97,15 @@ private:
                         double origin = joint_state->interface_values[i].values[j];
                         double fixed = origin;
                         fixed = origin + 1.717291;
-                        static int flag = 0;
-                        if (flag == 0){
-                            gimbal::pitch.relative_angle_pre = origin;
-                            flag = 1;
-                        }
                         if (fixed < 0) fixed+=6.28;
                         if(fixed > PI) fixed-=2*PI;//转换为-PI到PI
                         if(origin > PI) origin-=2*PI;
                         gimbal::pitch.relative_angle = origin;
+//                        static int flag = 0;
+//                        if (flag == 0){
+//                            gimbal::pitch.relative_angle_pre = origin;
+//                            flag = 1;
+//                        }
                         //RCLCPP_INFO(this->get_logger(), "origin %f fixed %f", origin, fixed);
                     }
                 }
@@ -115,10 +115,12 @@ private:
 
     void gimbal_yaw_callback(const std_msgs::msg::Float64::SharedPtr msg) {
         gimbal::yaw.sub_angle = *msg;
-        gimbal::yaw.absolute_angle_set = gimbal::yaw.sub_angle.data;
-        //RCLCPP_INFO(this->get_logger(),"angle %f",gimbal::yaw.sub_angle.data);
+        gimbal::yaw.absolute_angle_set = gimbal::yaw.relative_angle_pre - gimbal::yaw.absolute_angle_pre;
+        while (gimbal::yaw.absolute_angle_set > PI) gimbal::yaw.absolute_angle_set -= PI;
+        while (gimbal::yaw.absolute_angle_set < -PI) gimbal::yaw.absolute_angle_set += PI;
+        RCLCPP_INFO(this->get_logger(),"angle %f ecd_pre %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.relative_angle_pre);
         std_msgs::msg::Float64 pid;
-        gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set;
+        gimbal::yaw.pid_set = gimbal::yaw.absolute_angle_set + gimbal::yaw.sub_angle.data + gimbal::yaw.ecd_transform;
         //RCLCPP_INFO(this->get_logger(),"absolute_angle_set %f absolute_angle_pre %f relative_angle_pre %f pid_set %f",gimbal::yaw.absolute_angle_set,gimbal::yaw.absolute_angle_pre,gimbal::yaw.relative_angle_pre,gimbal::yaw.pid_set);
 
         pid.data = gimbal::yaw.pid_set;
