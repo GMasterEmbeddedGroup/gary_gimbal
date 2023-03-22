@@ -2,8 +2,8 @@
 // Created by maackia on 23-2-7.
 //
 
-#ifndef BUILD_GIMBAL_ENTER_HPP
-#define BUILD_GIMBAL_ENTER_HPP
+#ifndef BUILD_GIMBAL_TELEOP_HPP
+#define BUILD_GIMBAL_TELEOP_HPP
 
 #define PI 3.141592f
 
@@ -27,4 +27,4 @@ namespace enter
 }
 
 
-#endif //BUILD_GIMBAL_ENTER_HPP
+#endif //BUILD_GIMBAL_TELEOP_HPP

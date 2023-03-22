@@ -1,58 +1,69 @@
-//
-// Created by maackia on 23-2-7.
-//
+#pragma once
 
-#ifndef BUILD_GIMBAL_CONTROL_HPP
-#define BUILD_GIMBAL_CONTROL_HPP
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "sensor_msgs/msg/imu.hpp"
+#include "control_msgs/msg/dynamic_joint_state.hpp"
+#include "std_msgs/msg/float64.hpp"
 
-#define PI 3.141592f
 
-typedef enum
-{
-    GIMBAL_ZERO_FORCE = 0,
-    GIMBAL_ABSOLUTE_ANGLE,
-    GIMBAL_INIT,
-    GIMBAL_CALI,
-    GIMBAL_RELATIVE_ANGLE,
-    GIMBAL_MOTIONLESS,
-} gimbal_behaviour_e;
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-namespace gimbal
-{
-    sensor_msgs::msg::Imu Imu;//TODO 初始化
-    gary_msgs::msg::DualLoopPIDWithFilter yaw_pid;
-    gary_msgs::msg::DualLoopPIDWithFilter pitch_pid;
-    std_msgs::msg::Int16 state;
 
-    class Mode
-    {
+namespace gary_gimbal {
+    class GimbalControl : public rclcpp_lifecycle::LifecycleNode {
+
     public:
-        gimbal_behaviour_e behaviour;
-        gimbal_behaviour_e last_behaviour;
+        explicit GimbalControl(const rclcpp::NodeOptions & options);
+
+    private:
+        CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
+
+        CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state) override;
+
+        CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
+
+        CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+
+        CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
+
+        CallbackReturn on_error(const rclcpp_lifecycle::State & previous_state) override;
+
+        //callbacks
+        void imu_callback(sensor_msgs::msg::Imu::SharedPtr msg);
+        void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg);
+        void gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg);
+        void gimbal_pitch_callback(std_msgs::msg::Float64::SharedPtr msg);
+
+        //params
+        double gimbal_pitch_max{};
+        double gimbal_pitch_min{};
+        double gimbal_yaw_ecd_transform{};
+        double pitch_soft_limit{};
+        std::string pitch_publish_topic;
+        std::string yaw_publish_topic;
+        std::string pitch_subscribe_topic;
+        std::string yaw_subscribe_topic;
+        std::string imu_subscribe_topic;
+        std::string joint_subscribe_topic;
+
+        //publishers and subscribers
+        rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>::SharedPtr yaw_pid_publisher;
+        rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>::SharedPtr pitch_pid_publisher;
+        rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr yaw_cmd_sub;
+        rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr pitch_cmd_sub;
+        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
+        rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_sub;
+
+        //msg received and timestamp
+        sensor_msgs::msg::Imu imu;
+        rclcpp::Time imu_timestamp;
+        control_msgs::msg::DynamicJointState joint;
+        rclcpp::Time joint_timestamp;
+
+        double imu_yaw_angle_pre{};
+        double imu_yaw_angle{};
+        double motor_yaw_angle_pre{};
+        double motor_yaw_angle{};
     };
-
-    class Motor : public Mode{
-    public:
-        double absolute_angle;
-        double absolute_angle_pre;
-        double relative_angle_pre;
-        std_msgs::msg::Float64 sub_angle;
-        double absolute_angle_set;
-        double absolute_angle_max;
-        double absolute_angle_min;
-        double relative_angle;
-
-        double ecd_transform;
-        double ecd_set;
-        double ecd_delta;
-        double pid_set;
-
-    };
-
-    Motor yaw;
-    Motor pitch;
-    Mode mode;
-
 }
-
-#endif //BUILD_GIMBAL_CONTROL_HPP

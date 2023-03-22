@@ -18,13 +18,12 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(gary_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(controller_manager_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -36,18 +35,35 @@ target_include_directories(gimbal_control PRIVATE include)
 ament_target_dependencies(
         gimbal_control
         rclcpp
-        sensor_msgs
+        rclcpp_components
+        rclcpp_lifecycle
         std_msgs
-        controller_manager_msgs
-        gary_msgs
-        control_msgs)
+        control_msgs
+        sensor_msgs
+)
 
-add_executable(gimbal_enter src/gimbal_enter.cpp)
+add_library(gimbal_control_lib SHARED src/gimbal_control.cpp)
 
-target_include_directories(gimbal_enter PRIVATE include)
+target_include_directories(gimbal_control_lib PRIVATE include)
 
 ament_target_dependencies(
-        gimbal_enter
+        gimbal_control_lib
+        rclcpp
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        control_msgs
+        sensor_msgs
+)
+
+rclcpp_components_register_nodes(gimbal_control_lib "gary_gimbal::GimbalControl")
+
+add_executable(gimbal_teleop src/gimbal_teleop.cpp)
+
+target_include_directories(gimbal_teleop PRIVATE include)
+
+ament_target_dependencies(
+        gimbal_teleop
         rclcpp
         gary_msgs)
 
@@ -62,9 +78,23 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(TARGETS
-        gimbal_enter
+install(TARGETS gimbal_control gimbal_teleop
+        DESTINATION lib/${PROJECT_NAME}
+        )
+
+install(TARGETS gimbal_control_lib
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
+
+ament_export_dependencies(
         gimbal_control
-        DESTINATION lib/${PROJECT_NAME})
+        rclcpp
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        control_msgs
+        sensor_msgs
+)
 
 ament_package()

@@ -7,7 +7,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include "gary_msgs/msg/dr16_receiver.hpp"
 #include "gary_msgs/msg/auto_aim.hpp"
-#include "gary_gimbal/gimbal_enter.hpp"
+#include "gary_gimbal/gimbal_teleop.hpp"
 
 using namespace std::chrono_literals;
 
