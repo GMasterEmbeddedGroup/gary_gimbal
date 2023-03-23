@@ -62,14 +62,12 @@ CallbackReturn GimbalControl::on_configure(const rclcpp_lifecycle::State &previo
     this->imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
             this->imu_subscribe_topic, rclcpp::SystemDefaultsQoS(),
             std::bind(&GimbalControl::imu_callback, this, std::placeholders::_1));
-    this->imu_timestamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     //get joint_subscribe_topic
     this->joint_subscribe_topic = this->get_parameter("joint_subscribe_topic").as_string();
     this->joint_sub = this->create_subscription<control_msgs::msg::DynamicJointState>(
             this->joint_subscribe_topic, rclcpp::SystemDefaultsQoS(),
             std::bind(&GimbalControl::joint_callback, this, std::placeholders::_1));
-    this->joint_timestamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     RCLCPP_INFO(this->get_logger(), "configured");
     return CallbackReturn::SUCCESS;
@@ -149,67 +147,49 @@ CallbackReturn GimbalControl::on_error(const rclcpp_lifecycle::State &previous_s
 
 
 void GimbalControl::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
-    this->imu = *msg;
-    this->imu_timestamp = this->get_clock()->now();
+    double yaw, pitch, roll;
+
+    //quat to euler
+    tf2::Quaternion imu_quaternion(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
+    tf2::Matrix3x3 m(imu_quaternion);
+    m.getRPY(roll, pitch, yaw);
+
+    //log first data
+    this->imu_yaw_angle_pre = -roll;
+    this->imu_data_available = true;
+    this->imu_sub.reset();
 }
 
 
 void GimbalControl::joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg) {
-    this->joint = *msg;
-    this->joint_timestamp = this->get_clock()->now();
-}
 
-
-void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
-    rclcpp::Time time_now = this->get_clock()->now();
-
-    bool imu_available = (time_now - this->imu_timestamp).seconds() <= 0.5;
-    bool joint_available = (time_now - this->joint_timestamp).seconds() <= 0.5;
-
-    if (imu_available) {
-        double yaw, pitch, roll;
-
-        //quat to euler
-        tf2::Quaternion imu_quaternion(this->imu.orientation.x, this->imu.orientation.y, this->imu.orientation.z,
-                                       this->imu.orientation.w);
-        tf2::Matrix3x3 m(imu_quaternion);
-        m.getRPY(roll, pitch, yaw);
-
-        //log first data
-        static bool flag_first = false;
-        if (!flag_first) {
-            this->imu_yaw_angle_pre = -roll;
-            flag_first = true;
-        }
-
-        this->imu_yaw_angle = -roll;
-    }
-
-    if (joint_available) {
-        for (unsigned long i = 0; i < this->joint.joint_names.size(); ++i) {
-            if (this->joint.joint_names[i] == "gimbal_yaw") {
-                for (unsigned long j = 0; j < this->joint.interface_values[i].interface_names.size(); ++j) {
-                    if (this->joint.interface_values[i].interface_names[j] == "encoder") {
-                        this->motor_yaw_angle = this->joint.interface_values[i].values[j];
-                        static bool flag_first = false;
-                        if (!flag_first) {
-                            this->motor_yaw_angle_pre = this->motor_yaw_angle;
-                            flag_first = true;
-                        }
-                    }
+    //get yaw encoder
+    for (unsigned long i = 0; i < msg->joint_names.size(); ++i) {
+        if (msg->joint_names[i] == "gimbal_yaw") {
+            for (unsigned long j = 0; j < msg->interface_values[i].interface_names.size(); ++j) {
+                if (msg->interface_values[i].interface_names[j] == "encoder") {
+                    //log first data
+                    this->motor_yaw_angle_pre = msg->interface_values[i].values[j];
+                    this->joint_data_available = true;
+                    this->joint_sub.reset();
                 }
             }
         }
     }
+}
 
-    if (imu_available && joint_available) {
+
+void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
+
+    if (this->imu_data_available && this->joint_data_available) {
         double motor_imu_transform = this->motor_yaw_angle_pre - this->imu_yaw_angle_pre;
-        while (motor_imu_transform > M_PI) motor_imu_transform -= M_PI;
-        while (motor_imu_transform < -M_PI) motor_imu_transform += M_PI;
+        double relative_transform = motor_imu_transform + this->gimbal_yaw_ecd_transform;
+        while (relative_transform > M_PI) relative_transform -= 2 * M_PI;
+        while (relative_transform < -M_PI) relative_transform += 2 * M_PI;
 
         std_msgs::msg::Float64 pid_set;
-        pid_set.data = motor_imu_transform + this->gimbal_yaw_ecd_transform + msg->data;
-        this->yaw_pid_publisher->publish(pid_set);
+        pid_set.data = relative_transform + msg->data;
+        if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(pid_set);
     }
 }
 

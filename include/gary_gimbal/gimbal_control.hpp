@@ -55,15 +55,9 @@ namespace gary_gimbal {
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_sub;
 
-        //msg received and timestamp
-        sensor_msgs::msg::Imu imu;
-        rclcpp::Time imu_timestamp;
-        control_msgs::msg::DynamicJointState joint;
-        rclcpp::Time joint_timestamp;
-
         double imu_yaw_angle_pre{};
-        double imu_yaw_angle{};
         double motor_yaw_angle_pre{};
-        double motor_yaw_angle{};
+        bool imu_data_available{};
+        bool joint_data_available{};
     };
 }
