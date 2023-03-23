@@ -1,89 +1,199 @@
-//
-// Created by maackia on 23-2-7.
-//
-
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/int16.hpp"
-#include "std_msgs/msg/float64.hpp"
-#include "gary_msgs/msg/dr16_receiver.hpp"
-#include "gary_msgs/msg/auto_aim.hpp"
 #include "gary_gimbal/gimbal_teleop.hpp"
 
+
 using namespace std::chrono_literals;
+using namespace gary_gimbal;
 
-float k_rc = 0.08 , k_mk = 0.08; //k_为倍数参数,k_rc最大实践值0.084
 
-double judge_transgress(double gimble_enter){ //越界判断
-    while (gimble_enter > PI){
-        gimble_enter = gimble_enter - 2*PI;
-    }
-    while (gimble_enter < -PI){
-        gimble_enter = gimble_enter + 2*PI;
-    }
-    return gimble_enter; //算法缺陷：若拨出10pi，运算后最终也是0pi
+GimbalTeleop::GimbalTeleop(const rclcpp::NodeOptions &options) : rclcpp_lifecycle::LifecycleNode("gimbal_teleop",
+                                                                                                   options) {
+    //declare params
+    this->declare_parameter("gimbal_pitch_max", 0.0);
+    this->declare_parameter("gimbal_pitch_min", 0.0);
+    this->declare_parameter("k_rc", 1.0);
+    this->declare_parameter("k_mouse", 1.0);
+    this->declare_parameter("k_autoaim", 1.0);
+    this->declare_parameter("remote_control_topic", "/remote_control");
+    this->declare_parameter("autoaim_topic", "/autoaim/target");
+    this->declare_parameter("yaw_set_topic", "/gimbal_yaw_set");
+    this->declare_parameter("pitch_set_topic", "/gimbal_pitch_set");
 }
 
-class GimbalEnterTask : public rclcpp::Node
-{
-public:
-    GimbalEnterTask():Node("gimbal_enter"){
-        this->declare_parameter("gimbal_pitch_max",0.72477);//TODO 写入至配置文件
-        this->declare_parameter("gimbal_pitch_min",-0.45125);
+CallbackReturn GimbalTeleop::on_configure(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
 
-        rc_sub_ = this->create_subscription<gary_msgs::msg::DR16Receiver>("/remote_control",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::rc_callback,this,std::placeholders::_1));
-        auto_aim_sub_ = this->create_subscription<gary_msgs::msg::AutoAIM>("/autoaim/target",rclcpp::SystemDefaultsQoS(),std::bind(&GimbalEnterTask::auto_aim_callback,this,std::placeholders::_1));//TODO topic待定
-        yaw_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_yaw_enter",rclcpp::SystemDefaultsQoS());
-        pitch_enter_publisher_ = this->create_publisher<std_msgs::msg::Float64>("/gimbal_pitch_enter",rclcpp::SystemDefaultsQoS());
-    }
-private:
-    void rc_callback(const gary_msgs::msg::DR16Receiver::SharedPtr msg){
-        enter::RC_control = *msg;
-        if (enter::RC_control.sw_right == enter::RC_control.SW_MID || enter::RC_control.sw_right == enter::RC_control.SW_UP){
-            std_msgs::msg::Float64 yaw_enter;
-            std_msgs::msg::Float64 pitch_enter;
-            if (enter::RC_control.mouse_x == 0 && enter::RC_control.mouse_y == 0){ //判断鼠标无动作,使用遥控器
-                this->yaw_set += enter::RC_control.ch_right_x*k_rc; //最大值1684中间值1024最小值364
-                this->pitch_set += enter::RC_control.ch_right_y*k_rc;
-                if (this->pitch_set >= this->get_parameter("gimbal_pitch_max").as_double() - 0.05) this->pitch_set = this->get_parameter("gimbal_pitch_max").as_double() - 0.05;
-                if (this->pitch_set <= this->get_parameter("gimbal_pitch_min").as_double() + 0.05) this->pitch_set = this->get_parameter("gimbal_pitch_min").as_double() + 0.05;
-            }
-            else {
-                this->yaw_set += enter::RC_control.mouse_x*k_mk; //+-32767静止值0
-                this->pitch_set += enter::RC_control.mouse_y*k_mk;
-            }
-            yaw_enter.data = this->yaw_set;
-            pitch_enter.data = this->pitch_set;
-            RCLCPP_INFO(this->get_logger(),"yaw %f",this->yaw_set);
-            yaw_enter_publisher_->publish(yaw_enter);
-            pitch_enter_publisher_->publish(pitch_enter);
+    //get gimbal_pitch_max
+    this->gimbal_pitch_max = this->get_parameter("gimbal_pitch_max").as_double();
+
+    //get gimbal_pitch_min
+    this->gimbal_pitch_min = this->get_parameter("gimbal_pitch_min").as_double();
+
+    //get k_rc
+    this->k_rc = this->get_parameter("k_rc").as_double();
+
+    //get k_mouse
+    this->k_mouse = this->get_parameter("k_mouse").as_double();
+
+    //get k_autoaim
+    this->k_autoaim = this->get_parameter("k_autoaim").as_double();
+
+    //get remote_control_topic
+    this->remote_control_topic = this->get_parameter("remote_control_topic").as_string();
+    this->rc_sub = this->create_subscription<gary_msgs::msg::DR16Receiver>(
+            this->remote_control_topic, rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalTeleop::rc_callback, this, std::placeholders::_1));
+
+    //get autoaim_topic
+    this->autoaim_topic = this->get_parameter("autoaim_topic").as_string();
+    this->autoaim_sub = this->create_subscription<gary_msgs::msg::AutoAIM>(
+            this->autoaim_topic, rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalTeleop::autoaim_callback, this, std::placeholders::_1));
+
+    //get yaw_set_topic
+    this->yaw_set_topic = this->get_parameter("yaw_set_topic").as_string();
+    this->yaw_set_publisher = this->create_publisher<std_msgs::msg::Float64>(this->yaw_set_topic,
+                                                                               rclcpp::SystemDefaultsQoS());
+
+    //get pitch_set_topic
+    this->pitch_set_topic = this->get_parameter("pitch_set_topic").as_string();
+    this->pitch_set_publisher = this->create_publisher<std_msgs::msg::Float64>(this->pitch_set_topic,
+                                                                               rclcpp::SystemDefaultsQoS());
+
+    RCLCPP_INFO(this->get_logger(), "configured");
+    return CallbackReturn::SUCCESS;
+}
+
+
+CallbackReturn GimbalTeleop::on_cleanup(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
+
+    //destroy objects
+    this->rc_sub.reset();
+    this->autoaim_sub.reset();
+    this->yaw_set_publisher.reset();
+    this->pitch_set_publisher.reset();
+
+    RCLCPP_INFO(this->get_logger(), "cleaning up");
+    return CallbackReturn::SUCCESS;
+}
+
+
+CallbackReturn GimbalTeleop::on_activate(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
+
+    //activate lifecycle publisher
+    this->yaw_set_publisher->on_activate();
+    this->pitch_set_publisher->on_activate();
+
+    RCLCPP_INFO(this->get_logger(), "activated");
+    return CallbackReturn::SUCCESS;
+}
+
+
+CallbackReturn GimbalTeleop::on_deactivate(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
+
+    //deactivate lifecycle publisher
+    this->yaw_set_publisher->on_deactivate();
+    this->pitch_set_publisher->on_deactivate();
+
+    RCLCPP_INFO(this->get_logger(), "deactivated");
+    return CallbackReturn::SUCCESS;
+}
+
+
+CallbackReturn GimbalTeleop::on_shutdown(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
+
+    //destroy objects
+    if (this->rc_sub.get() != nullptr) this->rc_sub.reset();
+    if (this->autoaim_sub.get() != nullptr) this->autoaim_sub.reset();
+    if (this->yaw_set_publisher.get() != nullptr) this->yaw_set_publisher.reset();
+    if (this->pitch_set_publisher.get() != nullptr) this->pitch_set_publisher.reset();
+
+    RCLCPP_INFO(this->get_logger(), "shutdown");
+    return CallbackReturn::SUCCESS;
+}
+
+
+CallbackReturn GimbalTeleop::on_error(const rclcpp_lifecycle::State &previous_state) {
+    RCL_UNUSED(previous_state);
+
+    //destroy objects
+    if (this->rc_sub.get() != nullptr) this->rc_sub.reset();
+    if (this->autoaim_sub.get() != nullptr) this->autoaim_sub.reset();
+    if (this->yaw_set_publisher.get() != nullptr) this->yaw_set_publisher.reset();
+    if (this->pitch_set_publisher.get() != nullptr) this->pitch_set_publisher.reset();
+
+    RCLCPP_INFO(this->get_logger(), "error");
+    return CallbackReturn::SUCCESS;
+}
+
+
+void GimbalTeleop::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) {
+    std_msgs::msg::Float64 yaw_msg;
+    std_msgs::msg::Float64 pitch_msg;
+
+    if (msg->sw_right == gary_msgs::msg::DR16Receiver::SW_MID || msg->sw_right == gary_msgs::msg::DR16Receiver::SW_UP){
+
+        //判断鼠标无动作,使用遥控器
+        if (msg->mouse_x == 0 && msg->mouse_y == 0){
+            //最大值1684 中间值1024 最小值364
+            this->yaw_set += msg->ch_right_x * this->k_rc;
+            this->pitch_set += msg->ch_right_y * this->k_rc;
         }
-    }
-
-    void auto_aim_callback(const gary_msgs::msg::AutoAIM::SharedPtr msg){
-        enter::autoAim = *msg;
-        std_msgs::msg::Float64 yaw_enter;
-        std_msgs::msg::Float64 pitch_enter;
-
-        if (enter::autoAim.target_id != enter::autoAim.TARGET_ID0_NONE && enter::RC_control.sw_right == enter::RC_control.SW_UP){
-            this->yaw_set += enter::autoAim.yaw;
-            this->pitch_set += enter::autoAim.pitch;
-
-            yaw_enter.data = judge_transgress(this->yaw_set);
-            pitch_enter.data = this->pitch_set;
-            yaw_enter_publisher_->publish(yaw_enter);
-            pitch_enter_publisher_->publish(pitch_enter);
+        else {
+            //+-32767静止值0
+            this->yaw_set += msg->mouse_x * this->k_mouse;
+            this->pitch_set += msg->mouse_y * this->k_mouse;
         }
+
+        //limit
+        if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
+        if (this->pitch_set <= this->gimbal_pitch_min) this->pitch_set = this->gimbal_pitch_min;
+
+        yaw_msg.data = this->yaw_set;
+        pitch_msg.data = this->pitch_set;
+        this->yaw_set_publisher->publish(yaw_msg);
+        this->pitch_set_publisher->publish(pitch_msg);
     }
-    rclcpp::Subscription<gary_msgs::msg::DR16Receiver>::SharedPtr rc_sub_;
-    rclcpp::Subscription<gary_msgs::msg::AutoAIM>::SharedPtr auto_aim_sub_;
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr yaw_enter_publisher_;
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr pitch_enter_publisher_;
-    double pitch_set;
-    double yaw_set;
-};
+    this->use_autoaim = msg->sw_right == gary_msgs::msg::DR16Receiver::SW_UP;
+}
+
+
+void GimbalTeleop::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) {
+    std_msgs::msg::Float64 yaw_msg;
+    std_msgs::msg::Float64 pitch_msg;
+
+    //have target and use autoaim
+    if (msg->target_id != gary_msgs::msg::AutoAIM::TARGET_ID0_NONE && this->use_autoaim){
+        this->yaw_set += enter::autoAim.yaw * this->k_autoaim;
+        this->pitch_set += enter::autoAim.pitch * this->k_autoaim;
+
+        //pitch limit
+        if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
+        if (this->pitch_set <= this->gimbal_pitch_min) this->pitch_set = this->gimbal_pitch_min;
+
+        yaw_msg.data = this->yaw_set;
+        pitch_msg.data = this->pitch_set;
+        this->yaw_set_publisher->publish(yaw_msg);
+        this->pitch_set_publisher->publish(pitch_msg);
+    }
+}
+
 
 int main(int argc, char * argv[]){
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<GimbalEnterTask>());
+
+    rclcpp::executors::SingleThreadedExecutor exe;
+
+    std::shared_ptr<GimbalTeleop> gimbal_teleop = std::make_shared<GimbalTeleop>(rclcpp::NodeOptions());
+
+    exe.add_node(gimbal_teleop->get_node_base_interface());
+
+    exe.spin();
+
+    rclcpp::shutdown();
+
     return 0;
 }

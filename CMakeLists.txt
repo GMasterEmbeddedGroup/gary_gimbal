@@ -28,6 +28,7 @@ find_package(control_msgs REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
+
 add_executable(gimbal_control src/gimbal_control.cpp)
 
 target_include_directories(gimbal_control PRIVATE include)
@@ -41,6 +42,7 @@ ament_target_dependencies(
         control_msgs
         sensor_msgs
 )
+
 
 add_library(gimbal_control_lib SHARED src/gimbal_control.cpp)
 
@@ -58,6 +60,7 @@ ament_target_dependencies(
 
 rclcpp_components_register_nodes(gimbal_control_lib "gary_gimbal::GimbalControl")
 
+
 add_executable(gimbal_teleop src/gimbal_teleop.cpp)
 
 target_include_directories(gimbal_teleop PRIVATE include)
@@ -65,7 +68,28 @@ target_include_directories(gimbal_teleop PRIVATE include)
 ament_target_dependencies(
         gimbal_teleop
         rclcpp
-        gary_msgs)
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        gary_msgs
+)
+
+
+add_library(gimbal_teleop_lib SHARED src/gimbal_teleop.cpp)
+
+target_include_directories(gimbal_teleop_lib PRIVATE include)
+
+ament_target_dependencies(
+        gimbal_teleop_lib
+        rclcpp
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        gary_msgs
+)
+
+rclcpp_components_register_nodes(gimbal_teleop_lib "gary_gimbal::GimbalTeleop")
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -82,16 +106,16 @@ install(TARGETS gimbal_control gimbal_teleop
         DESTINATION lib/${PROJECT_NAME}
         )
 
-install(TARGETS gimbal_control_lib
+install(TARGETS gimbal_control_lib gimbal_teleop_lib
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
 ament_export_dependencies(
-        gimbal_control
         rclcpp
         rclcpp_components
         rclcpp_lifecycle
+        gary_msgs
         std_msgs
         control_msgs
         sensor_msgs
