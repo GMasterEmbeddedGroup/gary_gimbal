@@ -8,10 +8,10 @@ using namespace gary_gimbal;
 GimbalControl::GimbalControl(const rclcpp::NodeOptions &options) : rclcpp_lifecycle::LifecycleNode("gimbal_control",
                                                                                                    options) {
     //declare params
-    this->declare_parameter("gimbal_pitch_max", 0);
-    this->declare_parameter("gimbal_pitch_min", 0);
-    this->declare_parameter("gimbal_yaw_ecd_transform", 0);
-    this->declare_parameter("pitch_soft_limit", 0);
+    this->declare_parameter("gimbal_pitch_max", 0.0);
+    this->declare_parameter("gimbal_pitch_min", 0.0);
+    this->declare_parameter("gimbal_yaw_ecd_transform", 0.0);
+    this->declare_parameter("pitch_soft_limit", 0.0);
     this->declare_parameter("pitch_publish_topic", "/gimbal_pitch_pid/cmd");
     this->declare_parameter("yaw_publish_topic", "/yaw_pitch_pid/cmd");
     this->declare_parameter("pitch_subscribe_topic", "/gimbal_pitch_set");
