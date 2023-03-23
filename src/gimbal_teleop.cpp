@@ -6,7 +6,7 @@ using namespace gary_gimbal;
 
 
 GimbalTeleop::GimbalTeleop(const rclcpp::NodeOptions &options) : rclcpp_lifecycle::LifecycleNode("gimbal_teleop",
-                                                                                                   options) {
+                                                                                                 options) {
     //declare params
     this->declare_parameter("gimbal_pitch_max", 0.0);
     this->declare_parameter("gimbal_pitch_min", 0.0);
@@ -52,7 +52,7 @@ CallbackReturn GimbalTeleop::on_configure(const rclcpp_lifecycle::State &previou
     //get yaw_set_topic
     this->yaw_set_topic = this->get_parameter("yaw_set_topic").as_string();
     this->yaw_set_publisher = this->create_publisher<std_msgs::msg::Float64>(this->yaw_set_topic,
-                                                                               rclcpp::SystemDefaultsQoS());
+                                                                             rclcpp::SystemDefaultsQoS());
 
     //get pitch_set_topic
     this->pitch_set_topic = this->get_parameter("pitch_set_topic").as_string();
@@ -197,3 +197,7 @@ int main(int argc, char * argv[]){
 
     return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+
+RCLCPP_COMPONENTS_REGISTER_NODE(gary_gimbal::GimbalTeleop)
