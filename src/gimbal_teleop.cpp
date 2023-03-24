@@ -154,8 +154,8 @@ void GimbalTeleop::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) {
 
         yaw_msg.data = this->yaw_set;
         pitch_msg.data = this->pitch_set;
-        this->yaw_set_publisher->publish(yaw_msg);
-        this->pitch_set_publisher->publish(pitch_msg);
+        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
     }
     this->use_autoaim = msg->sw_right == gary_msgs::msg::DR16Receiver::SW_UP;
 }
@@ -176,8 +176,8 @@ void GimbalTeleop::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) {
 
         yaw_msg.data = this->yaw_set;
         pitch_msg.data = this->pitch_set;
-        this->yaw_set_publisher->publish(yaw_msg);
-        this->pitch_set_publisher->publish(pitch_msg);
+        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
     }
 }
 
