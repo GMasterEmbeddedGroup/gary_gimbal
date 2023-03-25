@@ -181,6 +181,7 @@ void GimbalControl::joint_callback(control_msgs::msg::DynamicJointState::SharedP
 
 void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
 
+    //calc head position
     if (this->imu_data_available && this->joint_data_available) {
         double motor_imu_transform = this->motor_yaw_angle_pre - this->imu_yaw_angle_pre;
         double relative_transform = motor_imu_transform + this->gimbal_yaw_ecd_transform;
@@ -190,6 +191,9 @@ void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
         std_msgs::msg::Float64 pid_set;
         pid_set.data = relative_transform + msg->data;
         if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(pid_set);
+    } else {
+        //if data unavailable, forward the command
+        if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(*msg);
     }
 }
 
