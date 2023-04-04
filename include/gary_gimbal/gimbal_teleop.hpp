@@ -54,9 +54,3 @@ namespace gary_gimbal {
         bool use_autoaim{};
     };
 }
-
-namespace enter
-{
-    gary_msgs::msg::DR16Receiver RC_control;
-    gary_msgs::msg::AutoAIM autoAim;
-}

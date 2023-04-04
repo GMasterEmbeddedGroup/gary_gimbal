@@ -167,8 +167,8 @@ void GimbalTeleop::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) {
 
     //have target and use autoaim
     if (msg->target_id != gary_msgs::msg::AutoAIM::TARGET_ID0_NONE && this->use_autoaim){
-        this->yaw_set += enter::autoAim.yaw * this->k_autoaim;
-        this->pitch_set += enter::autoAim.pitch * this->k_autoaim;
+        this->yaw_set -= msg->yaw * this->k_autoaim;
+        this->pitch_set -= msg->pitch * this->k_autoaim;
 
         //pitch limit
         if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
