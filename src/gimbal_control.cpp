@@ -149,6 +149,8 @@ CallbackReturn GimbalControl::on_error(const rclcpp_lifecycle::State &previous_s
 void GimbalControl::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
     double yaw, pitch, roll;
 
+    if(msg->orientation.x == 0.0f && msg->orientation.y == 0.0f && msg->orientation.z == 0.0f && msg->orientation.w == 0.0f) return;
+
     //quat to euler
     tf2::Quaternion imu_quaternion(msg->orientation.x, msg->orientation.y, msg->orientation.z, msg->orientation.w);
     tf2::Matrix3x3 m(imu_quaternion);
@@ -166,16 +168,24 @@ void GimbalControl::joint_callback(control_msgs::msg::DynamicJointState::SharedP
     //get yaw encoder
     for (unsigned long i = 0; i < msg->joint_names.size(); ++i) {
         if (msg->joint_names[i] == "gimbal_yaw") {
+            bool offline = true;
+            float encoder = 0.0;
+
             for (unsigned long j = 0; j < msg->interface_values[i].interface_names.size(); ++j) {
-                if (msg->interface_values[i].interface_names[j] == "offline" && msg->interface_values[i].values[j] == 1.0f) return;
+                if (msg->interface_values[i].interface_names[j] == "offline" && msg->interface_values[i].values[j] == 0.0f) offline = false;
             }
+
             for (unsigned long j = 0; j < msg->interface_values[i].interface_names.size(); ++j) {
                 if (msg->interface_values[i].interface_names[j] == "encoder") {
-                    //log first data
-                    this->motor_yaw_angle_pre = msg->interface_values[i].values[j];
-                    this->joint_data_available = true;
-                    this->joint_sub.reset();
+                    encoder = msg->interface_values[i].values[j];
                 }
+            }
+
+            //log first data
+            if(!offline) {
+                this->motor_yaw_angle_pre = encoder;
+                this->joint_data_available = true;
+                this->joint_sub.reset();
             }
         }
     }
@@ -196,7 +206,7 @@ void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
         if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(pid_set);
     } else {
         //if data unavailable, forward the command
-        if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(*msg);
+        //if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(*msg);
     }
 }
 
