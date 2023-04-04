@@ -167,6 +167,9 @@ void GimbalControl::joint_callback(control_msgs::msg::DynamicJointState::SharedP
     for (unsigned long i = 0; i < msg->joint_names.size(); ++i) {
         if (msg->joint_names[i] == "gimbal_yaw") {
             for (unsigned long j = 0; j < msg->interface_values[i].interface_names.size(); ++j) {
+                if (msg->interface_values[i].interface_names[j] == "offline" && msg->interface_values[i].values[j] == 1.0f) return;
+            }
+            for (unsigned long j = 0; j < msg->interface_values[i].interface_names.size(); ++j) {
                 if (msg->interface_values[i].interface_names[j] == "encoder") {
                     //log first data
                     this->motor_yaw_angle_pre = msg->interface_values[i].values[j];
