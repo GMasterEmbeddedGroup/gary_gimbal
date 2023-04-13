@@ -29,6 +29,9 @@ namespace gary_gimbal {
 
         CallbackReturn on_error(const rclcpp_lifecycle::State & previous_state) override;
 
+        //callback group
+        rclcpp::CallbackGroup::SharedPtr cb_group;
+
         //callbacks
         void imu_callback(sensor_msgs::msg::Imu::SharedPtr msg);
         void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg);

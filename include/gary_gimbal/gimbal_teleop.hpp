@@ -28,6 +28,9 @@ namespace gary_gimbal {
 
         CallbackReturn on_error(const rclcpp_lifecycle::State & previous_state) override;
 
+        //callback group
+        rclcpp::CallbackGroup::SharedPtr cb_group;
+
         //callbacks
         void rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg);
         void autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg);

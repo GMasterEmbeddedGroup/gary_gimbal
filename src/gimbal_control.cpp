@@ -23,6 +23,11 @@ GimbalControl::GimbalControl(const rclcpp::NodeOptions &options) : rclcpp_lifecy
 CallbackReturn GimbalControl::on_configure(const rclcpp_lifecycle::State &previous_state) {
     RCL_UNUSED(previous_state);
 
+    //create callback group
+    rclcpp::CallbackGroup::SharedPtr cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::SubscriptionOptions sub_options;
+    sub_options.callback_group = cb_group;
+
     //get gimbal_pitch_max
     this->gimbal_pitch_max = this->get_parameter("gimbal_pitch_max").as_double();
 
@@ -49,25 +54,25 @@ CallbackReturn GimbalControl::on_configure(const rclcpp_lifecycle::State &previo
     this->pitch_subscribe_topic = this->get_parameter("pitch_subscribe_topic").as_string();
     this->pitch_cmd_sub = this->create_subscription<std_msgs::msg::Float64>(
             this->pitch_subscribe_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalControl::gimbal_pitch_callback, this, std::placeholders::_1));
+            std::bind(&GimbalControl::gimbal_pitch_callback, this, std::placeholders::_1), sub_options);
 
     //get yaw_subscribe_topic
     this->yaw_subscribe_topic = this->get_parameter("yaw_subscribe_topic").as_string();
     this->yaw_cmd_sub = this->create_subscription<std_msgs::msg::Float64>(
             this->yaw_subscribe_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalControl::gimbal_yaw_callback, this, std::placeholders::_1));
+            std::bind(&GimbalControl::gimbal_yaw_callback, this, std::placeholders::_1), sub_options);
 
     //get imu_subscribe_topic
     this->imu_subscribe_topic = this->get_parameter("imu_subscribe_topic").as_string();
     this->imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
             this->imu_subscribe_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalControl::imu_callback, this, std::placeholders::_1));
+            std::bind(&GimbalControl::imu_callback, this, std::placeholders::_1), sub_options);
 
     //get joint_subscribe_topic
     this->joint_subscribe_topic = this->get_parameter("joint_subscribe_topic").as_string();
     this->joint_sub = this->create_subscription<control_msgs::msg::DynamicJointState>(
             this->joint_subscribe_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalControl::joint_callback, this, std::placeholders::_1));
+            std::bind(&GimbalControl::joint_callback, this, std::placeholders::_1), sub_options);
 
     RCLCPP_INFO(this->get_logger(), "configured");
     return CallbackReturn::SUCCESS;

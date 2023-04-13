@@ -22,6 +22,11 @@ GimbalTeleop::GimbalTeleop(const rclcpp::NodeOptions &options) : rclcpp_lifecycl
 CallbackReturn GimbalTeleop::on_configure(const rclcpp_lifecycle::State &previous_state) {
     RCL_UNUSED(previous_state);
 
+    //create callback group
+    rclcpp::CallbackGroup::SharedPtr cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::SubscriptionOptions sub_options;
+    sub_options.callback_group = cb_group;
+
     //get gimbal_pitch_max
     this->gimbal_pitch_max = this->get_parameter("gimbal_pitch_max").as_double();
 
@@ -41,13 +46,13 @@ CallbackReturn GimbalTeleop::on_configure(const rclcpp_lifecycle::State &previou
     this->remote_control_topic = this->get_parameter("remote_control_topic").as_string();
     this->rc_sub = this->create_subscription<gary_msgs::msg::DR16Receiver>(
             this->remote_control_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalTeleop::rc_callback, this, std::placeholders::_1));
+            std::bind(&GimbalTeleop::rc_callback, this, std::placeholders::_1), sub_options);
 
     //get autoaim_topic
     this->autoaim_topic = this->get_parameter("autoaim_topic").as_string();
     this->autoaim_sub = this->create_subscription<gary_msgs::msg::AutoAIM>(
             this->autoaim_topic, rclcpp::SystemDefaultsQoS(),
-            std::bind(&GimbalTeleop::autoaim_callback, this, std::placeholders::_1));
+            std::bind(&GimbalTeleop::autoaim_callback, this, std::placeholders::_1), sub_options);
 
     //get yaw_set_topic
     this->yaw_set_topic = this->get_parameter("yaw_set_topic").as_string();
