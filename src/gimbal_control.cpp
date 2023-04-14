@@ -13,6 +13,7 @@ GimbalControl::GimbalControl(const rclcpp::NodeOptions &options) : rclcpp_lifecy
     this->declare_parameter("gimbal_yaw_ecd_transform", 0.0);
     this->declare_parameter("pitch_soft_limit", 0.0);
     this->declare_parameter("pitch_publish_topic", "/gimbal_pitch_pid/cmd");
+    this->declare_parameter("yaw_pid_subscribe_topic", "/gimbal_yaw_pid/pid");
     this->declare_parameter("yaw_publish_topic", "/yaw_pitch_pid/cmd");
     this->declare_parameter("pitch_subscribe_topic", "/gimbal_pitch_set");
     this->declare_parameter("yaw_subscribe_topic", "/gimbal_yaw_set");
@@ -44,6 +45,12 @@ CallbackReturn GimbalControl::on_configure(const rclcpp_lifecycle::State &previo
     this->pitch_publish_topic = this->get_parameter("pitch_publish_topic").as_string();
     this->pitch_pid_publisher = this->create_publisher<std_msgs::msg::Float64>(this->pitch_publish_topic,
                                                                                rclcpp::SystemDefaultsQoS());
+
+    //get yaw_pid_subscribe_topic
+    this->yaw_pid_subscribe_topic = this->get_parameter("yaw_pid_subscribe_topic").as_string();
+    this->yaw_pid_subscriber = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>(
+            this->yaw_pid_subscribe_topic, rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalControl::yaw_pid_callback, this, std::placeholders::_1), sub_options);
 
     //get yaw_publish_topic
     this->yaw_publish_topic = this->get_parameter("yaw_publish_topic").as_string();
@@ -150,6 +157,10 @@ CallbackReturn GimbalControl::on_error(const rclcpp_lifecycle::State &previous_s
     return CallbackReturn::SUCCESS;
 }
 
+void GimbalControl::yaw_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg) {
+    this->gimbal_yaw_position = msg->outer_feedback;
+}
+
 
 void GimbalControl::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
     double yaw, pitch, roll;
@@ -208,7 +219,11 @@ void GimbalControl::gimbal_yaw_callback(std_msgs::msg::Float64::SharedPtr msg) {
 
         std_msgs::msg::Float64 pid_set;
         pid_set.data = relative_transform + msg->data;
-        if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(pid_set);
+        if (this->yaw_pid_publisher->is_activated()) {
+            while (pid_set.data - this->gimbal_yaw_position > M_PI) pid_set.data -= 2 * M_PI;
+            while (pid_set.data - this->gimbal_yaw_position < -M_PI) pid_set.data += 2 * M_PI;
+            this->yaw_pid_publisher->publish(pid_set);
+        }
     } else {
         //if data unavailable, forward the command
         //if (this->yaw_pid_publisher->is_activated()) this->yaw_pid_publisher->publish(*msg);

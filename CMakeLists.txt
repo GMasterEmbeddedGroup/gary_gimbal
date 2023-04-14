@@ -39,6 +39,7 @@ ament_target_dependencies(
         rclcpp_components
         rclcpp_lifecycle
         std_msgs
+        gary_msgs
         control_msgs
         sensor_msgs
 )
@@ -54,6 +55,7 @@ ament_target_dependencies(
         rclcpp_components
         rclcpp_lifecycle
         std_msgs
+        gary_msgs
         control_msgs
         sensor_msgs
 )
