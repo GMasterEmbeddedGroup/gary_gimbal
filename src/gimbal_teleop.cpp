@@ -23,7 +23,7 @@ CallbackReturn GimbalTeleop::on_configure(const rclcpp_lifecycle::State &previou
     RCL_UNUSED(previous_state);
 
     //create callback group
-    rclcpp::CallbackGroup::SharedPtr cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    this->cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     rclcpp::SubscriptionOptions sub_options;
     sub_options.callback_group = cb_group;
 
