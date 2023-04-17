@@ -18,7 +18,7 @@ GimbalAutonomous::GimbalAutonomous(const rclcpp::NodeOptions &options) : rclcpp_
     this->declare_parameter("pitch_set_topic", "/gimbal_pitch_set");
 
     rc_sw_right = gary_msgs::msg::DR16Receiver::SW_DOWN;
-    GimbalStatus = MANUAL;
+    GimbalStatus = ZERO_FORCE;
     last_target_timestamp = std::chrono::steady_clock::now();
 
     rolling_counter = 0.0;
@@ -262,8 +262,8 @@ void GimbalAutonomous::update() {
         static bool pitch_reverse = false;
 
 
-        auto gimbal_pitch_upper = (gimbal_pitch_max+gimbal_pitch_min)/2.0;
-        auto gimbal_pitch_lower = gimbal_pitch_min;
+        auto gimbal_pitch_upper = gimbal_pitch_max;
+        auto gimbal_pitch_lower = 0;
 
         auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
         if(!pitch_reverse){
