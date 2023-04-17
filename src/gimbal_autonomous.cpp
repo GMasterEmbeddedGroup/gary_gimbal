@@ -192,10 +192,10 @@ void GimbalAutonomous::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) 
         auto clock = rclcpp::Clock();
         RCLCPP_ERROR_THROTTLE(this->get_logger(),clock,3000,"Cannot receive DR16 message.");
     }else{
-        if(GimbalStatus != AUTO_AIM){
+        if(GimbalStatus == ZERO_FORCE || GimbalStatus == MANUAL){
             RCLCPP_INFO(this->get_logger(),"Switched to auto-aim mode!");
+            GimbalStatus = AUTO_AIM;
         }
-        GimbalStatus = AUTO_AIM;
     }
 }
 
@@ -205,7 +205,7 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
     std_msgs::msg::Float64 pitch_msg;
 
     //have target and use autoaim
-    if(GimbalStatus == AUTO_AIM) {
+    if(msg->target_id != gary_msgs::msg::AutoAIM::TARGET_ID0_NONE && GimbalStatus == AUTO_AIM) {
         auto now_target_timestamp = std::chrono::steady_clock::now();
         last_target_timestamp = now_target_timestamp;
 
