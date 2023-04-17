@@ -8,6 +8,7 @@ GimbalAutonomous::GimbalAutonomous(const rclcpp::NodeOptions &options) : rclcpp_
     //declare params
     this->declare_parameter("gimbal_pitch_max", 0.0);
     this->declare_parameter("gimbal_pitch_min", 0.0);
+    this->declare_parameter("rotate_time", 3.0);
     this->declare_parameter("k_rc", 1.0);
     this->declare_parameter("k_mouse", 1.0);
     this->declare_parameter("k_autoaim", 1.0);
@@ -23,6 +24,7 @@ GimbalAutonomous::GimbalAutonomous(const rclcpp::NodeOptions &options) : rclcpp_
     rolling_counter = 0.0;
     update_freq = 100.0;
     pitch_counter = 0.0;
+    rotate_time = 3.0;
 }
 
 CallbackReturn GimbalAutonomous::on_configure(const rclcpp_lifecycle::State &previous_state) {
@@ -39,6 +41,8 @@ CallbackReturn GimbalAutonomous::on_configure(const rclcpp_lifecycle::State &pre
     //get gimbal_pitch_min
     this->gimbal_pitch_min = this->get_parameter("gimbal_pitch_min").as_double();
     pitch_counter = gimbal_pitch_min;
+
+    this->rotate_time = this->get_parameter("rotate_time").as_double();
 
     //get k_rc
     this->k_rc = this->get_parameter("k_rc").as_double();
@@ -238,11 +242,12 @@ void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;
     std_msgs::msg::Float64 pitch_msg;
 
-    auto now_target_timestamp = std::chrono::steady_clock::now();
-    if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
-        GimbalStatus = ROTATE;
+    if(GimbalStatus != MANUAL && GimbalStatus != ZERO_FORCE) {
+        auto now_target_timestamp = std::chrono::steady_clock::now();
+        if (now_target_timestamp - last_target_timestamp > no_target_duration_limit) {
+            GimbalStatus = ROTATE;
+        }
     }
-
     if(GimbalStatus == AUTO_AIM){
         //do nothing.
         //let auto_aim callback handle this.
@@ -252,18 +257,23 @@ void GimbalAutonomous::update() {
         //let rc callback handle this.
         return;
     } else if(GimbalStatus == ROTATE){
-        rolling_counter += (M_PI * 2.0) / (3.0 * update_freq);
+        rolling_counter += (M_PI * 2.0) / (rotate_time * update_freq);
 
         static bool pitch_reverse = false;
-        auto pitch_diff = (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
+
+
+        auto gimbal_pitch_upper = (gimbal_pitch_max+gimbal_pitch_min)/2.0;
+        auto gimbal_pitch_lower = gimbal_pitch_min;
+
+        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
         if(!pitch_reverse){
             pitch_counter += pitch_diff;
-            if(pitch_counter + pitch_diff > gimbal_pitch_max){
+            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
                 pitch_reverse = true;
             }
         } else {
-            pitch_counter -= (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
-            if(pitch_counter - pitch_diff < gimbal_pitch_min){
+            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
                 pitch_reverse = false;
             }
         }

@@ -80,5 +80,6 @@ namespace gary_gimbal {
         double rolling_counter;
         double pitch_counter;
         double update_freq;
+        double rotate_time;
     };
 }
