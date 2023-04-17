@@ -1,0 +1,113 @@
+[0.019s] Invoking command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake /home/william/gary_ws/src/gary_gimbal -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=/home/william/gary_ws/src/gary_gimbal/install
+[0.207s] -- The C compiler identification is GNU 9.4.0
+[0.276s] -- The CXX compiler identification is GNU 9.4.0
+[0.289s] -- Check for working C compiler: /usr/bin/cc
+[0.369s] -- Check for working C compiler: /usr/bin/cc -- works
+[0.372s] -- Detecting C compiler ABI info
+[0.449s] -- Detecting C compiler ABI info - done
+[0.460s] -- Detecting C compile features
+[0.461s] -- Detecting C compile features - done
+[0.467s] -- Check for working CXX compiler: /usr/bin/c++
+[0.553s] -- Check for working CXX compiler: /usr/bin/c++ -- works
+[0.554s] -- Detecting CXX compiler ABI info
+[0.644s] -- Detecting CXX compiler ABI info - done
+[0.655s] -- Detecting CXX compile features
+[0.656s] -- Detecting CXX compile features - done
+[0.661s] -- Found ament_cmake: 0.9.11 (/opt/ros/foxy/share/ament_cmake/cmake)
+[1.030s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.10", minimum required is "3") 
+[1.030s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[1.297s] -- Found rclcpp: 2.4.2 (/opt/ros/foxy/share/rclcpp/cmake)
+[1.409s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.425s] -- Found rosidl_adapter: 1.3.0 (/opt/ros/foxy/share/rosidl_adapter/cmake)
+[1.560s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "1.1.1f")  
+[1.594s] -- Found FastRTPS: /opt/ros/foxy/include  
+[1.709s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.855s] -- Found rmw_implementation_cmake: 1.0.3 (/opt/ros/foxy/share/rmw_implementation_cmake/cmake)
+[1.859s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.862s] -- Looking for pthread.h
+[1.942s] -- Looking for pthread.h - found
+[1.942s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[2.025s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+[2.025s] -- Looking for pthread_create in pthreads
+[2.093s] -- Looking for pthread_create in pthreads - not found
+[2.093s] -- Looking for pthread_create in pthread
+[2.170s] -- Looking for pthread_create in pthread - found
+[2.171s] -- Found Threads: TRUE  
+[2.396s] -- Found rclcpp_components: 2.4.2 (/opt/ros/foxy/share/rclcpp_components/cmake)
+[2.497s] -- Found rclcpp_lifecycle: 2.4.2 (/opt/ros/foxy/share/rclcpp_lifecycle/cmake)
+[2.565s] -- Found gary_msgs: 0.0.1 (/home/william/gary_ws/install/share/gary_msgs/cmake)
+[2.612s] -- Found sensor_msgs: 2.0.5 (/opt/ros/foxy/share/sensor_msgs/cmake)
+[2.779s] -- Found control_msgs: 2.5.1 (/opt/ros/foxy/share/control_msgs/cmake)
+[3.199s] -- Found ament_lint_auto: 0.9.7 (/opt/ros/foxy/share/ament_lint_auto/cmake)
+[3.318s] -- Added test 'copyright' to check source files copyright and LICENSE
+[3.335s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[3.336s] -- Configured cppcheck include dirs: /home/william/gary_ws/src/gary_gimbal/include
+[3.336s] -- Configured cppcheck exclude dirs and/or files: 
+[3.352s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[3.352s] -- Configured cpplint exclude dirs and/or files: 
+[3.360s] -- Added test 'lint_cmake' to check CMake code style
+[3.379s] -- Added test 'uncrustify' to check C / C++ code style
+[3.379s] -- Configured uncrustify additional arguments: 
+[3.382s] -- Added test 'xmllint' to check XML markup files
+[3.391s] -- Configuring done
+[3.436s] -- Generating done
+[3.438s] -- Build files have been written to: /home/william/gary_ws/src/gary_gimbal/build/gary_gimbal
+[3.446s] Invoked command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake /home/william/gary_ws/src/gary_gimbal -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=/home/william/gary_ws/src/gary_gimbal/install
+[3.451s] Invoking command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --build /home/william/gary_ws/src/gary_gimbal/build/gary_gimbal -- -j8 -l8
+[3.497s] [35m[1mScanning dependencies of target gimbal_autonomous[0m
+[3.498s] [35m[1mScanning dependencies of target gimbal_teleop_lib[0m
+[3.499s] [35m[1mScanning dependencies of target gimbal_control[0m
+[3.499s] [35m[1mScanning dependencies of target gimbal_teleop[0m
+[3.500s] [35m[1mScanning dependencies of target gimbal_autonomous_lib[0m
+[3.501s] [35m[1mScanning dependencies of target gimbal_control_lib[0m
+[3.549s] [  8%] [32mBuilding CXX object CMakeFiles/gimbal_autonomous.dir/src/gimbal_autonomous.cpp.o[0m
+[3.550s] [ 16%] [32mBuilding CXX object CMakeFiles/gimbal_teleop_lib.dir/src/gimbal_teleop.cpp.o[0m
+[3.556s] [ 25%] [32mBuilding CXX object CMakeFiles/gimbal_autonomous_lib.dir/src/gimbal_autonomous.cpp.o[0m
+[3.558s] [ 33%] [32mBuilding CXX object CMakeFiles/gimbal_teleop.dir/src/gimbal_teleop.cpp.o[0m
+[3.561s] [ 41%] [32mBuilding CXX object CMakeFiles/gimbal_control.dir/src/gimbal_control.cpp.o[0m
+[3.566s] [ 50%] [32mBuilding CXX object CMakeFiles/gimbal_control_lib.dir/src/gimbal_control.cpp.o[0m
+[14.268s] [ 75%] [32m[1mLinking CXX executable gimbal_autonomous[0m
+[14.269s] [ 75%] [32m[1mLinking CXX executable gimbal_teleop[0m
+[14.269s] [ 75%] [32m[1mLinking CXX shared library libgimbal_teleop_lib.so[0m
+[14.270s] [ 83%] [32m[1mLinking CXX shared library libgimbal_autonomous_lib.so[0m
+[15.088s] [ 83%] Built target gimbal_teleop_lib
+[15.091s] [ 83%] Built target gimbal_teleop
+[15.118s] [ 83%] Built target gimbal_autonomous
+[15.137s] [ 83%] Built target gimbal_autonomous_lib
+[16.787s] [ 91%] [32m[1mLinking CXX shared library libgimbal_control_lib.so[0m
+[16.841s] [100%] [32m[1mLinking CXX executable gimbal_control[0m
+[17.441s] [100%] Built target gimbal_control_lib
+[17.461s] [100%] Built target gimbal_control
+[17.495s] Invoked command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --build /home/william/gary_ws/src/gary_gimbal/build/gary_gimbal -- -j8 -l8
+[17.548s] Invoking command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --install /home/william/gary_ws/src/gary_gimbal/build/gary_gimbal
+[17.564s] -- Install configuration: ""
+[17.565s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_control
+[17.571s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_control" to ""
+[17.571s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_teleop
+[17.574s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_teleop" to ""
+[17.574s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_autonomous
+[17.578s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/gary_gimbal/gimbal_autonomous" to ""
+[17.578s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_control_lib.so
+[17.588s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_control_lib.so" to ""
+[17.588s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_teleop_lib.so
+[17.594s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_teleop_lib.so" to ""
+[17.594s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_autonomous_lib.so
+[17.601s] -- Set runtime path of "/home/william/gary_ws/src/gary_gimbal/install/lib/libgimbal_autonomous_lib.so" to ""
+[17.601s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/ament_index/resource_index/package_run_dependencies/gary_gimbal
+[17.601s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/ament_index/resource_index/parent_prefix_path/gary_gimbal
+[17.604s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/environment/ament_prefix_path.sh
+[17.604s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/environment/ament_prefix_path.dsv
+[17.606s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/environment/path.sh
+[17.606s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/environment/path.dsv
+[17.607s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/local_setup.bash
+[17.607s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/local_setup.sh
+[17.608s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/local_setup.zsh
+[17.608s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/local_setup.dsv
+[17.608s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/package.dsv
+[17.609s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/ament_index/resource_index/packages/gary_gimbal
+[17.609s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/ament_index/resource_index/rclcpp_components/gary_gimbal
+[17.610s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/cmake/ament_cmake_export_dependencies-extras.cmake
+[17.610s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/cmake/gary_gimbalConfig.cmake
+[17.610s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/cmake/gary_gimbalConfig-version.cmake
+[17.611s] -- Installing: /home/william/gary_ws/src/gary_gimbal/install/share/gary_gimbal/package.xml
+[17.615s] Invoked command in '/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/foxy /usr/bin/cmake --install /home/william/gary_ws/src/gary_gimbal/build/gary_gimbal

@@ -1,0 +1,3 @@
+gary_gimbal::GimbalControl;lib/libgimbal_control_lib.so
+gary_gimbal::GimbalAutonomous;lib/libgimbal_autonomous_lib.so
+gary_gimbal::GimbalTeleop;lib/libgimbal_teleop_lib.so

@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include    -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_control.dir/src/gimbal_control.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_control.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_control.cpp"
+},
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include    -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_autonomous.dir/src/gimbal_autonomous.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_autonomous.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_autonomous.cpp"
+},
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dgimbal_autonomous_lib_EXPORTS -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include  -fPIC   -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_autonomous_lib.dir/src/gimbal_autonomous.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_autonomous.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_autonomous.cpp"
+},
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include    -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_teleop.dir/src/gimbal_teleop.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_teleop.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_teleop.cpp"
+},
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dgimbal_teleop_lib_EXPORTS -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include  -fPIC   -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_teleop_lib.dir/src/gimbal_teleop.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_teleop.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_teleop.cpp"
+},
+{
+  "directory": "/home/william/gary_ws/src/gary_gimbal/build/gary_gimbal",
+  "command": "/usr/bin/c++  -DDEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp -DRCUTILS_ENABLE_FAULT_INJECTION -DSPDLOG_COMPILED_LIB -Dgimbal_control_lib_EXPORTS -I/home/william/gary_ws/src/gary_gimbal/include -isystem /home/william/gary_ws/install/include -isystem /opt/ros/foxy/include  -fPIC   -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/gimbal_control_lib.dir/src/gimbal_control.cpp.o -c /home/william/gary_ws/src/gary_gimbal/src/gimbal_control.cpp",
+  "file": "/home/william/gary_ws/src/gary_gimbal/src/gimbal_control.cpp"
+}
+]
