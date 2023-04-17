@@ -223,10 +223,11 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
 
     }else if(GimbalStatus != MANUAL){
         if(msg->target_id == gary_msgs::msg::AutoAIM::TARGET_ID0_NONE){
-            auto now_target_timestamp = std::chrono::steady_clock::now();
-            if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
-                GimbalStatus = ROTATE;
-            }
+            /*@deprecated: Moved to function update()*/
+//            auto now_target_timestamp = std::chrono::steady_clock::now();
+//            if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
+//                GimbalStatus = ROTATE;
+//            }
         } else {
             GimbalStatus = AUTO_AIM;
         }
@@ -236,6 +237,11 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
 void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;
     std_msgs::msg::Float64 pitch_msg;
+
+    auto now_target_timestamp = std::chrono::steady_clock::now();
+    if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
+        GimbalStatus = ROTATE;
+    }
 
     if(GimbalStatus == AUTO_AIM){
         //do nothing.
