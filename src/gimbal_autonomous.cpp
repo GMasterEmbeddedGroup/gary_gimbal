@@ -176,6 +176,27 @@ void GimbalAutonomous::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) 
         if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
         if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
     }
+
+    if(rc_sw_right == gary_msgs::msg::DR16Receiver::SW_MID){
+        if(GimbalStatus != MANUAL){
+            RCLCPP_INFO(this->get_logger(),"Switched to manual mode!");
+        }
+        GimbalStatus = MANUAL;
+    }else if(rc_sw_right == gary_msgs::msg::DR16Receiver::SW_DOWN){
+        if(GimbalStatus != ZERO_FORCE){
+            RCLCPP_INFO(this->get_logger(),"Switched to zero-force mode!");
+        }
+        GimbalStatus = ZERO_FORCE;
+    }else if(rc_sw_right != gary_msgs::msg::DR16Receiver::SW_UP){
+        GimbalStatus = ZERO_FORCE;
+        auto clock = rclcpp::Clock();
+        RCLCPP_ERROR_THROTTLE(this->get_logger(),clock,3000,"Cannot receive DR16 message.");
+    }else{
+        if(GimbalStatus != AUTO_AIM){
+            RCLCPP_INFO(this->get_logger(),"Switched to auto-aim mode!");
+        }
+        GimbalStatus = AUTO_AIM;
+    }
 }
 
 
@@ -216,51 +237,39 @@ void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;
     std_msgs::msg::Float64 pitch_msg;
 
-    if(rc_sw_right == gary_msgs::msg::DR16Receiver::SW_MID){
-        if(GimbalStatus != MANUAL){
-            RCLCPP_INFO(this->get_logger(),"Switched to manual mode!");
-        }
-        GimbalStatus = MANUAL;
-    }else if(rc_sw_right == gary_msgs::msg::DR16Receiver::SW_DOWN){
-        if(GimbalStatus != ZERO_FORCE){
-            RCLCPP_INFO(this->get_logger(),"Switched to zero-force mode!");
-        }
-        GimbalStatus = ZERO_FORCE;
-    }else if(rc_sw_right != gary_msgs::msg::DR16Receiver::SW_UP){
-        GimbalStatus = ZERO_FORCE;
-        auto clock = rclcpp::Clock();
-        RCLCPP_ERROR_THROTTLE(this->get_logger(),clock,3000,"Cannot receive DR16 message.");
-    }else if(rc_sw_right == gary_msgs::msg::DR16Receiver::SW_UP){
-        if(GimbalStatus == AUTO_AIM){
-            //do nothing.
-            //let auto_aim callback handle this.
-            return;
-        }else if(GimbalStatus == ROTATE){
-            rolling_counter += (M_PI * 2.0) / (3.0 * update_freq);
+    if(GimbalStatus == AUTO_AIM){
+        //do nothing.
+        //let auto_aim callback handle this.
+        return;
+    }else if(GimbalStatus == MANUAL){
+        //do nothing.
+        //let rc callback handle this.
+        return;
+    } else if(GimbalStatus == ROTATE){
+        rolling_counter += (M_PI * 2.0) / (3.0 * update_freq);
 
-            static bool pitch_reverse = false;
-            auto pitch_diff = (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
-            if(!pitch_reverse){
-                pitch_counter += pitch_diff;
-                if(pitch_counter + pitch_diff > gimbal_pitch_max){
-                    pitch_reverse = true;
-                }
-            } else {
-                pitch_counter -= (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
-                if(pitch_counter - pitch_diff < gimbal_pitch_min){
-                    pitch_reverse = false;
-                }
+        static bool pitch_reverse = false;
+        auto pitch_diff = (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
+        if(!pitch_reverse){
+            pitch_counter += pitch_diff;
+            if(pitch_counter + pitch_diff > gimbal_pitch_max){
+                pitch_reverse = true;
             }
-
-            this->yaw_set = rolling_counter;
-            this->pitch_set = pitch_counter;
-
-            yaw_msg.data = this->yaw_set;
-            pitch_msg.data = this->pitch_set;
-            if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-            if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
-
+        } else {
+            pitch_counter -= (gimbal_pitch_max - gimbal_pitch_min) / update_freq;
+            if(pitch_counter - pitch_diff < gimbal_pitch_min){
+                pitch_reverse = false;
+            }
         }
+
+        this->yaw_set = rolling_counter;
+        this->pitch_set = pitch_counter;
+
+        yaw_msg.data = this->yaw_set;
+        pitch_msg.data = this->pitch_set;
+        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
+
     }
 }
 
