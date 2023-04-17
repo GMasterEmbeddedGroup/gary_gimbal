@@ -62,6 +62,39 @@ ament_target_dependencies(
 
 rclcpp_components_register_nodes(gimbal_control_lib "gary_gimbal::GimbalControl")
 
+add_executable(gimbal_autonomous src/gimbal_autonomous.cpp)
+
+target_include_directories(gimbal_autonomous PRIVATE include)
+
+ament_target_dependencies(
+        gimbal_autonomous
+        rclcpp
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        gary_msgs
+        control_msgs
+        sensor_msgs
+)
+
+
+add_library(gimbal_autonomous_lib SHARED src/gimbal_autonomous.cpp)
+
+target_include_directories(gimbal_autonomous_lib PRIVATE include)
+
+ament_target_dependencies(
+        gimbal_autonomous_lib
+        rclcpp
+        rclcpp_components
+        rclcpp_lifecycle
+        std_msgs
+        gary_msgs
+        control_msgs
+        sensor_msgs
+)
+
+rclcpp_components_register_nodes(gimbal_autonomous_lib "gary_gimbal::GimbalAutonomous")
+
 
 add_executable(gimbal_teleop src/gimbal_teleop.cpp)
 
@@ -104,11 +137,11 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(TARGETS gimbal_control gimbal_teleop
+install(TARGETS gimbal_control gimbal_teleop gimbal_autonomous
         DESTINATION lib/${PROJECT_NAME}
         )
 
-install(TARGETS gimbal_control_lib gimbal_teleop_lib
+install(TARGETS gimbal_control_lib gimbal_teleop_lib gimbal_autonomous_lib
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
