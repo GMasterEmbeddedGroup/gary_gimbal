@@ -16,6 +16,10 @@ GimbalAutonomous::GimbalAutonomous(const rclcpp::NodeOptions &options) : rclcpp_
     this->declare_parameter("autoaim_topic", "/autoaim/target");
     this->declare_parameter("yaw_set_topic", "/gimbal_yaw_set");
     this->declare_parameter("pitch_set_topic", "/gimbal_pitch_set");
+    this->declare_parameter("robot_hurt_topic", "/referee/robot_hurt");
+    this->declare_parameter("yaw_encoder_bias", 1.6280826);
+    this->declare_parameter("joint_topic", "/dynamic_joint_states");
+
 
     rc_sw_right = gary_msgs::msg::DR16Receiver::SW_DOWN;
     GimbalStatus = ZERO_FORCE;
@@ -74,6 +78,19 @@ CallbackReturn GimbalAutonomous::on_configure(const rclcpp_lifecycle::State &pre
     this->pitch_set_topic = this->get_parameter("pitch_set_topic").as_string();
     this->pitch_set_publisher = this->create_publisher<std_msgs::msg::Float64>(this->pitch_set_topic,
                                                                                rclcpp::SystemDefaultsQoS());
+    //get robot_hurt_topic
+    this->robot_hurt_topic = this->get_parameter("robot_hurt_topic").as_string();
+    this->robot_hurt_sub = this->create_subscription<gary_msgs::msg::RobotHurt>(
+            this->robot_hurt_topic,rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalAutonomous::robot_hurt_callback,this,std::placeholders::_1), sub_options);
+
+    //get yaw_encoder_bias
+    this->yaw_encoder_bias = this->get_parameter("yaw_encoder_bias").as_double();
+
+    this->joint_topic = this->get_parameter("joint_topic").as_string();
+    this->joint_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
+            this->joint_topic, rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalAutonomous::joint_callback, this, std::placeholders::_1), sub_options);
 
     rolling_counter = 0.0;
 
@@ -88,8 +105,10 @@ CallbackReturn GimbalAutonomous::on_cleanup(const rclcpp_lifecycle::State &previ
     //destroy objects
     this->rc_sub.reset();
     this->autoaim_sub.reset();
+    this->robot_hurt_sub.reset();
     this->yaw_set_publisher.reset();
     this->pitch_set_publisher.reset();
+    this->joint_subscriber.reset();
 
     RCLCPP_INFO(this->get_logger(), "cleaning up");
     return CallbackReturn::SUCCESS;
@@ -130,8 +149,10 @@ CallbackReturn GimbalAutonomous::on_shutdown(const rclcpp_lifecycle::State &prev
     //destroy objects
     if (this->rc_sub.get() != nullptr) this->rc_sub.reset();
     if (this->autoaim_sub.get() != nullptr) this->autoaim_sub.reset();
+    if (this->robot_hurt_sub.get() != nullptr) this->robot_hurt_sub.reset();
     if (this->yaw_set_publisher.get() != nullptr) this->yaw_set_publisher.reset();
     if (this->pitch_set_publisher.get() != nullptr) this->pitch_set_publisher.reset();
+    if (this->joint_subscriber.get() != nullptr) this->joint_subscriber.reset();
 
     RCLCPP_INFO(this->get_logger(), "shutdown");
     return CallbackReturn::SUCCESS;
@@ -144,8 +165,10 @@ CallbackReturn GimbalAutonomous::on_error(const rclcpp_lifecycle::State &previou
     //destroy objects
     if (this->rc_sub.get() != nullptr) this->rc_sub.reset();
     if (this->autoaim_sub.get() != nullptr) this->autoaim_sub.reset();
+    if (this->robot_hurt_sub.get() != nullptr) this->robot_hurt_sub.reset();
     if (this->yaw_set_publisher.get() != nullptr) this->yaw_set_publisher.reset();
     if (this->pitch_set_publisher.get() != nullptr) this->pitch_set_publisher.reset();
+    if (this->joint_subscriber.get() != nullptr) this->joint_subscriber.reset();
 
     RCLCPP_INFO(this->get_logger(), "error");
     return CallbackReturn::SUCCESS;
@@ -225,7 +248,7 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
         if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
         if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
 
-    }else if(GimbalStatus != MANUAL){
+    }else if(GimbalStatus != MANUAL && GimbalStatus != ZERO_FORCE){
         if(msg->target_id == gary_msgs::msg::AutoAIM::TARGET_ID0_NONE){
             /*@deprecated: Moved to function update()*/
 //            auto now_target_timestamp = std::chrono::steady_clock::now();
@@ -242,12 +265,14 @@ void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;
     std_msgs::msg::Float64 pitch_msg;
 
-    if(GimbalStatus != MANUAL && GimbalStatus != ZERO_FORCE) {
+    if(GimbalStatus == AUTO_AIM) { // Auto-aim lazy lost.
         auto now_target_timestamp = std::chrono::steady_clock::now();
         if (now_target_timestamp - last_target_timestamp > no_target_duration_limit) {
             GimbalStatus = ROTATE;
         }
     }
+
+
     if(GimbalStatus == AUTO_AIM){
         //do nothing.
         //let auto_aim callback handle this.
@@ -287,6 +312,60 @@ void GimbalAutonomous::update() {
         if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
 
     }
+}
+
+void GimbalAutonomous::robot_hurt_callback(gary_msgs::msg::RobotHurt::SharedPtr msg) {
+
+    if(msg->hurt_type != msg->HURT_TYPE_ARMOR_DAMAGE || msg->hurt_type != msg->HURT_TYPE_ARMOR_COLLISION){
+        RCLCPP_INFO(this->get_logger(),"Received hurt msg but not form armor.");
+        return;
+    }else{
+        RCLCPP_INFO(this->get_logger(),"Received hurt msg.");
+    }
+
+    auto hurt_id = msg->armor_id;
+    const double armor_angle[5] = {0.0,M_PI_4,M_PI_2,3*M_PI_4,0.0};
+
+    bool offline = true;
+    double relative_angle = 0.0;
+
+    //get yaw motor encoder and calc relative_angle
+    for (unsigned long i = 0; i < this->joint_state.joint_names.size(); ++i) {
+        if (this->joint_state.joint_names[i] == "gimbal_yaw") {
+            for (unsigned long j = 0; j < this->joint_state.interface_values[i].interface_names.size(); ++j) {
+
+                if (this->joint_state.interface_values[i].interface_names[j] == "offline"
+                && this->joint_state.interface_values[i].values[j] == 0.0f) {
+                    offline = false;
+                }
+
+                if (this->joint_state.interface_values[i].interface_names[j] == "encoder") {
+                    relative_angle = this->yaw_encoder_bias - this->joint_state.interface_values[i].values[j];
+                }
+            }
+        }
+    }
+
+    if(offline){
+        GimbalStatus = ZERO_FORCE;
+        RCLCPP_ERROR(this->get_logger(),"Yaw motor offline! Entered zero-force mode.");
+        return;
+    }else{
+        auto angle_diff = armor_angle[hurt_id] - relative_angle;
+        rolling_counter += angle_diff;
+
+        std_msgs::msg::Float64 yaw_msg;
+        this->yaw_set = rolling_counter;
+        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+
+        GimbalStatus = AUTO_AIM;
+        RCLCPP_INFO(this->get_logger(),"Turning to armor %d and switched to auto-aim mode.",hurt_id);
+    }
+
+}
+
+void GimbalAutonomous::joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg) {
+    this->joint_state = *msg;
 }
 
 
