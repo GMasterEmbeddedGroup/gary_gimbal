@@ -8,7 +8,7 @@ GimbalAutonomous::GimbalAutonomous(const rclcpp::NodeOptions &options) : rclcpp_
     //declare params
     this->declare_parameter("gimbal_pitch_max", 0.0);
     this->declare_parameter("gimbal_pitch_min", 0.0);
-    this->declare_parameter("rotate_time", 3.0);
+    this->declare_parameter("rotate_time", 5.17);
     this->declare_parameter("k_rc", 1.0);
     this->declare_parameter("k_mouse", 1.0);
     this->declare_parameter("k_autoaim", 1.0);
@@ -91,6 +91,15 @@ CallbackReturn GimbalAutonomous::on_configure(const rclcpp_lifecycle::State &pre
     this->joint_subscriber = this->create_subscription<control_msgs::msg::DynamicJointState>(
             this->joint_topic, rclcpp::SystemDefaultsQoS(),
             std::bind(&GimbalAutonomous::joint_callback, this, std::placeholders::_1), sub_options);
+
+    this->pitch_pid_sub = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>(
+            "/gimbal_pitch_pid/pid", rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalAutonomous::pitch_pid_callback, this, std::placeholders::_1), sub_options);
+
+    this->yaw_pid_sub = this->create_subscription<gary_msgs::msg::DualLoopPIDWithFilter>(
+            "/gimbal_yaw_pid/pid", rclcpp::SystemDefaultsQoS(),
+            std::bind(&GimbalAutonomous::yaw_pid_callback, this, std::placeholders::_1), sub_options);
+
 
     rolling_counter = 0.0;
 
@@ -236,8 +245,10 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
         auto now_target_timestamp = std::chrono::steady_clock::now();
         last_target_timestamp = now_target_timestamp;
 
-        this->yaw_set -= msg->yaw * this->k_autoaim;
-        this->pitch_set -= msg->pitch * this->k_autoaim;
+//        this->yaw_set -= msg->yaw * this->k_autoaim;
+//        this->pitch_set -= msg->pitch * this->k_autoaim;
+        this->yaw_set = this->yaw_fdb_angle - msg->yaw * this->k_autoaim + 0.03f;
+        this->pitch_set = this->pitch_fdb_angle - msg->pitch * this->k_autoaim - 0.055f;
 
         //pitch limit
         if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
@@ -260,6 +271,16 @@ void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) 
         }
     }
 }
+
+void GimbalAutonomous::pitch_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg) {
+    this->pitch_fdb_angle = msg->outer_feedback;
+}
+
+
+void GimbalAutonomous::yaw_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg) {
+    this->yaw_fdb_angle = msg->outer_feedback;
+}
+
 
 void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;

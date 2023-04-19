@@ -6,6 +6,7 @@
 #include "gary_msgs/msg/dr16_receiver.hpp"
 #include "gary_msgs/msg/auto_aim.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
 #include "gary_msgs/msg/robot_hurt.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
 
@@ -23,7 +24,7 @@ namespace gary_gimbal {
         ZERO_FORCE
     } GimbalStatusEnum;
 
-    constexpr auto no_target_duration_limit = 3000ms;
+    constexpr auto no_target_duration_limit = 2000ms;
 
     class GimbalAutonomous : public rclcpp_lifecycle::LifecycleNode {
     public:
@@ -52,6 +53,9 @@ namespace gary_gimbal {
         void autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg);
         void robot_hurt_callback(gary_msgs::msg::RobotHurt::SharedPtr msg);
         void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg);
+        void pitch_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg);
+        void yaw_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg);
+
 
         //params
         double gimbal_pitch_max{};
@@ -73,9 +77,14 @@ namespace gary_gimbal {
         rclcpp::Subscription<control_msgs::msg::DynamicJointState>::SharedPtr joint_subscriber;
         rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>::SharedPtr yaw_set_publisher;
         rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>::SharedPtr pitch_set_publisher;
+        rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub;
+        rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr yaw_pid_sub;
 
         double pitch_set{};
         double yaw_set{};
+        double pitch_fdb_angle{};
+        double yaw_fdb_angle{};
+
 
         gary_msgs::msg::DR16Receiver::_sw_right_type rc_sw_right;
         GimbalStatusEnum GimbalStatus;
