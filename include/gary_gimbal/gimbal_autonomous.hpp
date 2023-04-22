@@ -9,6 +9,7 @@
 #include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
 #include "gary_msgs/msg/robot_hurt.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -17,8 +18,8 @@ using namespace std::chrono_literals;
 namespace gary_gimbal {
     typedef enum{
         MANUAL = 0,
-        LOW_SPEED = 1,
-        HIGH_SPEED = 2,
+        RIGHT_120 = 1,
+        LEFT_120 = 2,
         ROTATE = 3,
         AUTO_AIM = 4,
         ZERO_FORCE
@@ -55,6 +56,7 @@ namespace gary_gimbal {
         void joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg);
         void pitch_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg);
         void yaw_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg);
+        void odometry_callback(nav_msgs::msg::Odometry::SharedPtr msg);
 
 
         //params
@@ -79,6 +81,7 @@ namespace gary_gimbal {
         rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>::SharedPtr pitch_set_publisher;
         rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub;
         rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr yaw_pid_sub;
+        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
 
         double pitch_set{};
         double yaw_set{};
@@ -88,6 +91,7 @@ namespace gary_gimbal {
 
         gary_msgs::msg::DR16Receiver::_sw_right_type rc_sw_right;
         GimbalStatusEnum GimbalStatus;
+        GimbalStatusEnum LAST_STATUS;
 
         control_msgs::msg::DynamicJointState joint_state;
 
@@ -101,5 +105,10 @@ namespace gary_gimbal {
         double update_freq;
         double rotate_time;
         double yaw_encoder_bias{};
+
+        struct{
+            double x;
+            double y;
+        } pos{};
     };
 }
