@@ -234,61 +234,62 @@ void GimbalAutonomous::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) 
         GimbalStatus = ZERO_FORCE;
         auto clock = rclcpp::Clock();
         RCLCPP_ERROR_THROTTLE(this->get_logger(),clock,3000,"Cannot receive DR16 message.");
-    }else{
-        if(GimbalStatus == ZERO_FORCE || GimbalStatus == MANUAL){
-            RCLCPP_INFO(this->get_logger(),"Switched to auto-aim mode!");
-            GimbalStatus = AUTO_AIM;
-        }
+    }else{//Do nothing.
+//        if(GimbalStatus == ZERO_FORCE || GimbalStatus == MANUAL){
+//            RCLCPP_INFO(this->get_logger(),"Switched to auto-aim mode!");
+//            GimbalStatus = AUTO_AIM;
+//        }
     }
 }
 
 
 void GimbalAutonomous::autoaim_callback(gary_msgs::msg::AutoAIM::SharedPtr msg) {
-    std_msgs::msg::Float64 yaw_msg;
-    std_msgs::msg::Float64 pitch_msg;
-
-    //have target and use autoaim
-    if(msg->target_id != gary_msgs::msg::AutoAIM::TARGET_ID0_NONE && GimbalStatus == AUTO_AIM) {
-
-        auto clock = rclcpp::Clock();
-        RCLCPP_INFO_THROTTLE(this->get_logger(),clock,2000,"Aiming at target, id[%d].", msg->target_id);
-
-        auto now_target_timestamp = std::chrono::steady_clock::now();
-        last_target_timestamp = now_target_timestamp;
-
-//        this->yaw_set -= msg->yaw * this->k_autoaim;
-//        this->pitch_set -= msg->pitch * this->k_autoaim;
-        this->yaw_set = this->yaw_fdb_angle - msg->yaw * this->k_autoaim + 0.03f;
-        this->pitch_set = this->pitch_fdb_angle - msg->pitch * this->k_autoaim - 0.055f;
-
-        //pitch limit
-        if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
-        if (this->pitch_set <= this->gimbal_pitch_min) this->pitch_set = this->gimbal_pitch_min;
-
-    }else if(GimbalStatus != MANUAL && GimbalStatus != ZERO_FORCE){
-        if(msg->target_id == gary_msgs::msg::AutoAIM::TARGET_ID0_NONE){
-            /*@deprecated: Moved to function update()*/
+//    std_msgs::msg::Float64 yaw_msg;
+//    std_msgs::msg::Float64 pitch_msg;
+//
+//    //have target and use autoaim
+//    if(msg->target_id != gary_msgs::msg::AutoAIM::TARGET_ID0_NONE && GimbalStatus == AUTO_AIM) {
+//
+//        auto clock = rclcpp::Clock();
+//        RCLCPP_INFO_THROTTLE(this->get_logger(),clock,2000,"Aiming at target, id[%d].", msg->target_id);
+//
+//        auto now_target_timestamp = std::chrono::steady_clock::now();
+//        last_target_timestamp = now_target_timestamp;
+//
+////        this->yaw_set -= msg->yaw * this->k_autoaim;
+////        this->pitch_set -= msg->pitch * this->k_autoaim;
+//        this->yaw_set = this->yaw_fdb_angle - msg->yaw * this->k_autoaim + 0.03f;
+//        this->pitch_set = this->pitch_fdb_angle - msg->pitch * this->k_autoaim - 0.055f;
+//
+//        //pitch limit
+//        if (this->pitch_set >= this->gimbal_pitch_max) this->pitch_set = this->gimbal_pitch_max;
+//        if (this->pitch_set <= this->gimbal_pitch_min) this->pitch_set = this->gimbal_pitch_min;
+//
+//    }else if(GimbalStatus != MANUAL && GimbalStatus != ZERO_FORCE){
+//        if(msg->target_id == gary_msgs::msg::AutoAIM::TARGET_ID0_NONE){
+//            /*@deprecated: Moved to function update()*/
+////            auto now_target_timestamp = std::chrono::steady_clock::now();
+////            if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
+////                GimbalStatus = ROTATE;
+////            }
+//        } else {
+//            auto clock = rclcpp::Clock();
+//            RCLCPP_INFO_THROTTLE(this->get_logger(),clock,2000,"Aiming at target, id[%d].", msg->target_id);
+//
 //            auto now_target_timestamp = std::chrono::steady_clock::now();
-//            if(now_target_timestamp - last_target_timestamp > no_target_duration_limit){
-//                GimbalStatus = ROTATE;
-//            }
-        } else {
-            auto clock = rclcpp::Clock();
-            RCLCPP_INFO_THROTTLE(this->get_logger(),clock,2000,"Aiming at target, id[%d].", msg->target_id);
-
-            auto now_target_timestamp = std::chrono::steady_clock::now();
-            last_target_timestamp = now_target_timestamp;
-
-            GimbalStatus = AUTO_AIM;
-        }
-    }
-
-    if(GimbalStatus == AUTO_AIM){
-        yaw_msg.data = this->yaw_set;
-        pitch_msg.data = this->pitch_set;
-        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
-    }
+//            last_target_timestamp = now_target_timestamp;
+//
+//            GimbalStatus = AUTO_AIM;
+//        }
+//    }
+//
+//    if(GimbalStatus == AUTO_AIM){
+//        yaw_msg.data = this->yaw_set;
+//        pitch_msg.data = this->pitch_set;
+//        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+//        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
+//    }
+//Do nothing.
 }
 
 void GimbalAutonomous::pitch_pid_callback(gary_msgs::msg::DualLoopPIDWithFilter::SharedPtr msg) {
@@ -305,224 +306,226 @@ void GimbalAutonomous::update() {
     std_msgs::msg::Float64 yaw_msg;
     std_msgs::msg::Float64 pitch_msg;
 
-    if(GimbalStatus != ZERO_FORCE && GimbalStatus != MANUAL && GimbalStatus!= AUTO_AIM){
-        if(pos.x < (0.0 - 1.0)){
-            GimbalStatus = RIGHT_120;
-        }else if(pos.x < 2.0){
-            GimbalStatus = ROTATE;
-        }else{
-            GimbalStatus = LEFT_120;
-        }
-    }
-
-    if(GimbalStatus == AUTO_AIM) { // Auto-aim lazy lost.
-        auto now_target_timestamp = std::chrono::steady_clock::now();
-        if (now_target_timestamp - last_target_timestamp > no_target_duration_limit) {
-            if(pos.x < (0.0 - 1.0)){
-                GimbalStatus = RIGHT_120;
-            }else if(pos.x < 2.0){
-                GimbalStatus = ROTATE;
-            }else{
-                GimbalStatus = LEFT_120;
-            }
-        }
-    }
-
-
-    if(GimbalStatus == AUTO_AIM){
-        //do nothing.
-        //let auto_aim callback handle this.
-        return;
-    }else if(GimbalStatus == MANUAL){
+//    if(GimbalStatus != ZERO_FORCE && GimbalStatus != MANUAL && GimbalStatus!= AUTO_AIM){
+//        if(pos.x < (0.0 - 1.0)){
+//            GimbalStatus = RIGHT_120;
+//        }else if(pos.x < 2.0){
+//            GimbalStatus = ROTATE;
+//        }else{
+//            GimbalStatus = LEFT_120;
+//        }
+//    }
+//
+//    if(GimbalStatus == AUTO_AIM) { // Auto-aim lazy lost.
+//        auto now_target_timestamp = std::chrono::steady_clock::now();
+//        if (now_target_timestamp - last_target_timestamp > no_target_duration_limit) {
+//            if(pos.x < (0.0 - 1.0)){
+//                GimbalStatus = RIGHT_120;
+//            }else if(pos.x < 2.0){
+//                GimbalStatus = ROTATE;
+//            }else{
+//                GimbalStatus = LEFT_120;
+//            }
+//        }
+//    }
+//
+//
+//    if(GimbalStatus == AUTO_AIM){
+//        //do nothing.
+//        //let auto_aim callback handle this.
+//        return;
+//    }else
+    if(GimbalStatus == MANUAL){
         //do nothing.
         //let rc callback handle this.
         return;
-    } else if(GimbalStatus == ROTATE){
-        rolling_counter += (M_PI * 2.0) / (rotate_time * update_freq);
-
-        static bool pitch_reverse = false;
-
-        auto gimbal_pitch_upper = gimbal_pitch_max;
-        auto gimbal_pitch_lower = 0;
-
-        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-        if(!pitch_reverse){
-            pitch_counter += pitch_diff;
-            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
-                pitch_reverse = true;
-            }
-        } else {
-            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
-                pitch_reverse = false;
-            }
-        }
-
-        this->yaw_set = rolling_counter;
-        this->pitch_set = pitch_counter;
-
-        yaw_msg.data = this->yaw_set;
-        pitch_msg.data = this->pitch_set;
-        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
-
-    }else if(GimbalStatus == RIGHT_120){
-        static double base = 0.0;
-        if(LAST_STATUS != RIGHT_120){
-            int i = 0;
-            while(rolling_counter - (M_PI * 2) > 0){
-                rolling_counter -= (M_PI * 2);
-                i += 1;
-            }
-            base = (M_PI * 2) * i;
-            rolling_counter = base + (M_PI / 180.0) * (0-20);
-        }
-
-        static bool pitch_reverse = false;
-        static bool yaw_reverse = false;
-
-        auto gimbal_pitch_upper = gimbal_pitch_max;
-        auto gimbal_pitch_lower = 0;
-
-        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-        if(!pitch_reverse){
-            pitch_counter += pitch_diff;
-            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
-                pitch_reverse = true;
-            }
-        } else {
-            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
-                pitch_reverse = false;
-            }
-        }
-
-        if(!yaw_reverse){
-            rolling_counter += (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
-            if(rolling_counter >= base + (M_PI / 180.0) * ((0 - 20) + 140)){
-                yaw_reverse = true;
-            }
-        } else {
-            rolling_counter -= (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
-            if(rolling_counter <= base + (M_PI / 180.0) * (0 - 20)){
-                yaw_reverse = false;
-            }
-        }
-
-        this->yaw_set = rolling_counter;
-        this->pitch_set = pitch_counter;
-
-        yaw_msg.data = this->yaw_set;
-        pitch_msg.data = this->pitch_set;
-        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
-    }else if(GimbalStatus == LEFT_120){
-        static double base = 0.0;
-        if(LAST_STATUS != LEFT_120){
-            int i = 0;
-            while(rolling_counter - (M_PI * 2) > 0){
-                rolling_counter -= (M_PI * 2);
-                i += 1;
-            }
-            base = (M_PI * 2) * i;
-            rolling_counter = base + ((M_PI / 180.0) * 20);
-        }
-
-        static bool pitch_reverse = false;
-        static bool yaw_reverse = false;
-
-        auto gimbal_pitch_upper = gimbal_pitch_max;
-        auto gimbal_pitch_lower = 0;
-
-        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-        if(!pitch_reverse){
-            pitch_counter += pitch_diff;
-            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
-                pitch_reverse = true;
-            }
-        } else {
-            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
-            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
-                pitch_reverse = false;
-            }
-        }
-
-        if(!yaw_reverse){
-            rolling_counter -= (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
-            if(rolling_counter <= base + (M_PI / 180.0) * ((0 + 20) - 140)){
-                yaw_reverse = true;
-            }
-        } else {
-            rolling_counter += (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
-            if(rolling_counter >= base + (M_PI / 180.0) * (0 + 20)){
-                yaw_reverse = false;
-            }
-        }
-
-        this->yaw_set = rolling_counter;
-        this->pitch_set = pitch_counter;
-
-        yaw_msg.data = this->yaw_set;
-        pitch_msg.data = this->pitch_set;
-        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
     }
+//    else if(GimbalStatus == ROTATE){
+//        rolling_counter += (M_PI * 2.0) / (rotate_time * update_freq);
+//
+//        static bool pitch_reverse = false;
+//
+//        auto gimbal_pitch_upper = gimbal_pitch_max;
+//        auto gimbal_pitch_lower = 0;
+//
+//        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//        if(!pitch_reverse){
+//            pitch_counter += pitch_diff;
+//            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
+//                pitch_reverse = true;
+//            }
+//        } else {
+//            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
+//                pitch_reverse = false;
+//            }
+//        }
+//
+//        this->yaw_set = rolling_counter;
+//        this->pitch_set = pitch_counter;
+//
+//        yaw_msg.data = this->yaw_set;
+//        pitch_msg.data = this->pitch_set;
+//        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+//        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
+//
+//    }else if(GimbalStatus == RIGHT_120){
+//        static double base = 0.0;
+//        if(LAST_STATUS != RIGHT_120){
+//            int i = 0;
+//            while(rolling_counter - (M_PI * 2) > 0){
+//                rolling_counter -= (M_PI * 2);
+//                i += 1;
+//            }
+//            base = (M_PI * 2) * i;
+//            rolling_counter = base + (M_PI / 180.0) * (0-20);
+//        }
+//
+//        static bool pitch_reverse = false;
+//        static bool yaw_reverse = false;
+//
+//        auto gimbal_pitch_upper = gimbal_pitch_max;
+//        auto gimbal_pitch_lower = 0;
+//
+//        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//        if(!pitch_reverse){
+//            pitch_counter += pitch_diff;
+//            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
+//                pitch_reverse = true;
+//            }
+//        } else {
+//            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
+//                pitch_reverse = false;
+//            }
+//        }
+//
+//        if(!yaw_reverse){
+//            rolling_counter += (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
+//            if(rolling_counter >= base + (M_PI / 180.0) * ((0 - 20) + 140)){
+//                yaw_reverse = true;
+//            }
+//        } else {
+//            rolling_counter -= (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
+//            if(rolling_counter <= base + (M_PI / 180.0) * (0 - 20)){
+//                yaw_reverse = false;
+//            }
+//        }
+//
+//        this->yaw_set = rolling_counter;
+//        this->pitch_set = pitch_counter;
+//
+//        yaw_msg.data = this->yaw_set;
+//        pitch_msg.data = this->pitch_set;
+//        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+//        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
+//    }else if(GimbalStatus == LEFT_120){
+//        static double base = 0.0;
+//        if(LAST_STATUS != LEFT_120){
+//            int i = 0;
+//            while(rolling_counter - (M_PI * 2) > 0){
+//                rolling_counter -= (M_PI * 2);
+//                i += 1;
+//            }
+//            base = (M_PI * 2) * i;
+//            rolling_counter = base + ((M_PI / 180.0) * 20);
+//        }
+//
+//        static bool pitch_reverse = false;
+//        static bool yaw_reverse = false;
+//
+//        auto gimbal_pitch_upper = gimbal_pitch_max;
+//        auto gimbal_pitch_lower = 0;
+//
+//        auto pitch_diff = (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//        if(!pitch_reverse){
+//            pitch_counter += pitch_diff;
+//            if(pitch_counter + pitch_diff > gimbal_pitch_upper){
+//                pitch_reverse = true;
+//            }
+//        } else {
+//            pitch_counter -= (gimbal_pitch_upper - gimbal_pitch_lower) / update_freq;
+//            if(pitch_counter - pitch_diff < gimbal_pitch_lower){
+//                pitch_reverse = false;
+//            }
+//        }
+//
+//        if(!yaw_reverse){
+//            rolling_counter -= (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
+//            if(rolling_counter <= base + (M_PI / 180.0) * ((0 + 20) - 140)){
+//                yaw_reverse = true;
+//            }
+//        } else {
+//            rolling_counter += (M_PI / 1.5) / ((rotate_time / 2.0) * update_freq);
+//            if(rolling_counter >= base + (M_PI / 180.0) * (0 + 20)){
+//                yaw_reverse = false;
+//            }
+//        }
+//
+//        this->yaw_set = rolling_counter;
+//        this->pitch_set = pitch_counter;
+//
+//        yaw_msg.data = this->yaw_set;
+//        pitch_msg.data = this->pitch_set;
+//        if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+//        if (this->pitch_set_publisher->is_activated()) this->pitch_set_publisher->publish(pitch_msg);
+//    }
 
     LAST_STATUS = GimbalStatus;
 }
 
 void GimbalAutonomous::robot_hurt_callback(gary_msgs::msg::RobotHurt::SharedPtr msg) {
 
-    if(msg->hurt_type != msg->HURT_TYPE_ARMOR_DAMAGE && msg->hurt_type != msg->HURT_TYPE_ARMOR_COLLISION){
-        RCLCPP_INFO(this->get_logger(),"Received hurt msg but not form armor.");
-        return;
-    }else{
-        RCLCPP_INFO(this->get_logger(),"Received hurt msg.");
-    }
-
-    auto hurt_id = msg->armor_id;
-    const double armor_angle[5] = {0.0,M_PI_4,M_PI_2,3*M_PI_4,0.0};
-
-    bool offline = true;
-    double relative_angle = 0.0;
-
-    //get yaw motor encoder and calc relative_angle
-    for (unsigned long i = 0; i < this->joint_state.joint_names.size(); ++i) {
-        if (this->joint_state.joint_names[i] == "gimbal_yaw") {
-            for (unsigned long j = 0; j < this->joint_state.interface_values[i].interface_names.size(); ++j) {
-
-                if (this->joint_state.interface_values[i].interface_names[j] == "offline"
-                && this->joint_state.interface_values[i].values[j] == 0.0f) {
-                    offline = false;
-                }
-
-                if (this->joint_state.interface_values[i].interface_names[j] == "encoder") {
-                    relative_angle = this->yaw_encoder_bias - this->joint_state.interface_values[i].values[j];
-                }
-            }
-        }
-    }
-
-    if(offline){
-        GimbalStatus = ZERO_FORCE;
-        RCLCPP_ERROR(this->get_logger(),"Yaw motor offline! Entered zero-force mode.");
-        return;
-    }else{
-        if(GimbalStatus != ZERO_FORCE) {
-//            auto angle_diff = armor_angle[hurt_id] - relative_angle;
-//            rolling_counter += angle_diff;
+//    if(msg->hurt_type != msg->HURT_TYPE_ARMOR_DAMAGE && msg->hurt_type != msg->HURT_TYPE_ARMOR_COLLISION){
+//        RCLCPP_INFO(this->get_logger(),"Received hurt msg but not form armor.");
+//        return;
+//    }else{
+//        RCLCPP_INFO(this->get_logger(),"Received hurt msg.");
+//    }
 //
-            std_msgs::msg::Float64 yaw_msg;
-//            this->yaw_set = rolling_counter;
-            this->yaw_set = armor_angle[hurt_id];
-            yaw_msg.data = yaw_set;
-            if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
-
-            GimbalStatus = AUTO_AIM;
-            RCLCPP_INFO(this->get_logger(), "Turning to armor %d and switched to auto-aim mode.", hurt_id);
-        }
-    }
-
+//    auto hurt_id = msg->armor_id;
+//    const double armor_angle[5] = {0.0,M_PI_4,M_PI_2,3*M_PI_4,0.0};
+//
+//    bool offline = true;
+//    double relative_angle = 0.0;
+//
+//    //get yaw motor encoder and calc relative_angle
+//    for (unsigned long i = 0; i < this->joint_state.joint_names.size(); ++i) {
+//        if (this->joint_state.joint_names[i] == "gimbal_yaw") {
+//            for (unsigned long j = 0; j < this->joint_state.interface_values[i].interface_names.size(); ++j) {
+//
+//                if (this->joint_state.interface_values[i].interface_names[j] == "offline"
+//                && this->joint_state.interface_values[i].values[j] == 0.0f) {
+//                    offline = false;
+//                }
+//
+//                if (this->joint_state.interface_values[i].interface_names[j] == "encoder") {
+//                    relative_angle = this->yaw_encoder_bias - this->joint_state.interface_values[i].values[j];
+//                }
+//            }
+//        }
+//    }
+//
+//    if(offline){
+//        GimbalStatus = ZERO_FORCE;
+//        RCLCPP_ERROR(this->get_logger(),"Yaw motor offline! Entered zero-force mode.");
+//        return;
+//    }else{
+//        if(GimbalStatus != ZERO_FORCE) {
+////            auto angle_diff = armor_angle[hurt_id] - relative_angle;
+////            rolling_counter += angle_diff;
+////
+//            std_msgs::msg::Float64 yaw_msg;
+////            this->yaw_set = rolling_counter;
+//            this->yaw_set = armor_angle[hurt_id];
+//            yaw_msg.data = yaw_set;
+//            if (this->yaw_set_publisher->is_activated()) this->yaw_set_publisher->publish(yaw_msg);
+//
+//            GimbalStatus = AUTO_AIM;
+//            RCLCPP_INFO(this->get_logger(), "Turning to armor %d and switched to auto-aim mode.", hurt_id);
+//        }
+//    }
+//Do nothing.
 }
 
 void GimbalAutonomous::joint_callback(control_msgs::msg::DynamicJointState::SharedPtr msg) {
