@@ -236,7 +236,7 @@ void GimbalAutonomous::rc_callback(gary_msgs::msg::DR16Receiver::SharedPtr msg) 
         RCLCPP_ERROR_THROTTLE(this->get_logger(),clock,3000,"Cannot receive DR16 message.");
     }else{
         GimbalStatus = ZERO_FORCE;
-        RCLCPP_INFO(this->get_logger(),"Switched to zero-force mode! Controlling node given to ROS1.");
+        RCLCPP_INFO_ONCE(this->get_logger(),"Switched to zero-force mode! Controlling node given to ROS1.");
     }
 }
 
