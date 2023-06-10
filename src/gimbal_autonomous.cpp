@@ -109,10 +109,6 @@ CallbackReturn GimbalAutonomous::on_configure(const rclcpp_lifecycle::State &pre
     rolling_counter = 0.0;
     LAST_STATUS = ZERO_FORCE;
 
-    if(!reset_motor()){
-        return CallbackReturn::FAILURE;
-    }
-
     RCLCPP_INFO(this->get_logger(), "configured");
     return CallbackReturn::SUCCESS;
 }
@@ -537,37 +533,6 @@ void GimbalAutonomous::joint_callback(control_msgs::msg::DynamicJointState::Shar
 void GimbalAutonomous::odometry_callback(nav_msgs::msg::Odometry::SharedPtr msg) {
     this->pos.x = msg->pose.pose.position.x;
     this->pos.y = msg->pose.pose.position.y;
-}
-
-bool GimbalAutonomous::reset_motor() {
-    auto reset_request = std::make_shared<gary_msgs::srv::ResetMotorPosition::Request>();
-    reset_request->motor_name = "gimbal_yaw";
-
-    using namespace std::chrono_literals;
-    while (!ResetMotorPositionClient->wait_for_service(1s)) {
-        if (!rclcpp::ok()) {
-            RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
-            return false;
-        }
-        RCLCPP_INFO(this->get_logger(), "Service \'ResetMotorPositionClient\' not available, waiting again...");
-    }
-
-    using ServiceResponseFuture =
-            rclcpp::Client<gary_msgs::srv::ResetMotorPosition>::SharedFuture;
-    bool success = false;
-    bool zeroed = false;
-    auto response_received_callback = [this,&success,&zeroed](ServiceResponseFuture future) {
-        RCLCPP_INFO(this->get_logger(), "Received Response.");
-        success = future.get()->succ;
-        zeroed = true;
-    };
-
-    auto reset_pos_result = ResetMotorPositionClient->async_send_request(reset_request,response_received_callback);
-    if(zeroed && !success){
-        RCLCPP_ERROR(this->get_logger(), "Failed to reset position. Trying again.");
-        return false;
-    }
-    return true; //pretend it can be used.
 }
 
 

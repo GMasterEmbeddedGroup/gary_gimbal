@@ -8,7 +8,6 @@
 #include "std_msgs/msg/float64.hpp"
 #include "gary_msgs/msg/dual_loop_pid_with_filter.hpp"
 #include "gary_msgs/msg/robot_hurt.hpp"
-#include "gary_msgs/srv/reset_motor_position.hpp"
 #include "control_msgs/msg/dynamic_joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 
@@ -83,9 +82,6 @@ namespace gary_gimbal {
         rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr pitch_pid_sub;
         rclcpp::Subscription<gary_msgs::msg::DualLoopPIDWithFilter>::SharedPtr yaw_pid_sub;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber;
-
-        rclcpp::Client<gary_msgs::srv::ResetMotorPosition>::SharedPtr ResetMotorPositionClient;
-        bool reset_motor();
 
         double pitch_set{};
         double yaw_set{};
