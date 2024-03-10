@@ -25,6 +25,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -43,6 +46,8 @@ ament_target_dependencies(
         gary_msgs
         control_msgs
         sensor_msgs
+	tf2_ros
+  	tf2_geometry_msgs
 )
 
 
@@ -59,6 +64,8 @@ ament_target_dependencies(
         gary_msgs
         control_msgs
         sensor_msgs
+	tf2_ros
+  	tf2_geometry_msgs
 )
 
 rclcpp_components_register_nodes(gimbal_control_lib "gary_gimbal::GimbalControl")
@@ -76,7 +83,7 @@ ament_target_dependencies(
         gary_msgs
         control_msgs
         sensor_msgs
-        nav_msgs
+       	nav_msgs
 )
 
 
@@ -157,7 +164,9 @@ ament_export_dependencies(
         std_msgs
         control_msgs
         sensor_msgs
-        nav_msgs
+	tf2_ros
+  	tf2_geometry_msgs
+	nav_msgs
 )
 
 ament_package()
